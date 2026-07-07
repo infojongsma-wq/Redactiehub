@@ -384,9 +384,12 @@ function parseInput(text){
 
     if(ncols===1) return pairsMode(lines);
 
-    // koprij? kolommen 2..n van rij 0 zijn niet-numeriek
-    const headerLike = rows[0].slice(1).some(c=>c!=="" && isNaN(parseNum(c))) &&
-                       rows[0].slice(1).every(c=> isNaN(parseNum(c)));
+    // koprij? kolommen 2..n van rij 0 zijn niet-numeriek, OF tekst-eerste-cel + jaartal-koppen (2019, 2020…)
+    const c0 = rows[0].slice(1);
+    const isYear = c=>{ const v=parseNum(c); return !isNaN(v) && Number.isInteger(v) && v>=1500 && v<=2100; };
+    const firstCellText = rows[0][0]!=="" && isNaN(parseNum(rows[0][0]));
+    const headerLike = (c0.some(c=>c!=="" && isNaN(parseNum(c))) && c0.every(c=> isNaN(parseNum(c)))) ||
+                       (firstCellText && c0.length>0 && c0.every(isYear));
     const header = (headerLike && rows.length>1) ? rows[0] : null;
     const body = header ? rows.slice(1) : rows;
 
@@ -395,7 +398,8 @@ function parseInput(text){
     for(let j=1;j<ncols;j++){
       series.push({
         naam: header ? (header[j] || ("Reeks "+j)) : (ncols>2 ? "Reeks "+j : "Waarde"),
-        waarden: body.map(r=> { const v=parseNum(r[j]); return isNaN(v)?0:v; }),
+        // lege/niet-numerieke cel -> null (= ontbrekende meting), niet 0
+        waarden: body.map(r=>{ const raw=r[j]; if(raw==null||String(raw).trim()==="") return null; const v=parseNum(raw); return isNaN(v)?null:v; }),
       });
     }
     return { labels, series };
@@ -438,9 +442,9 @@ function extractFromText(text){
   while((m = numRe.exec(clean))){
     const v = parseNum(m[0]); if(isNaN(v)) continue;
     const before = clean.slice(0, m.index).trim().split(/\s+/).filter(Boolean).slice(-6);
-    // zoek dichtstbijzijnde eigennaam (hoofdletter) als label
+    // zoek dichtstbijzijnde eigennaam (hoofdletter, geen stopwoord als "De/Het/Een") als label
     let capIdx=-1;
-    for(let k=before.length-1;k>=0;k--){ if(/^[A-ZÀ-Þ]/.test(before[k])){ capIdx=k; break; } }
+    for(let k=before.length-1;k>=0;k--){ if(/^[A-ZÀ-Þ]/.test(before[k]) && !TEKST_STOP.has(before[k].toLowerCase())){ capIdx=k; break; } }
     let label;
     if(capIdx>=0){
       let start=capIdx;
@@ -451,8 +455,9 @@ function extractFromText(text){
     }
     label = (label||("Waarde "+(labels.length+1))).replace(/[^\wÀ-þ %-]/g,"").replace(/\s+/g," ").trim();
     if(!label) label = "Waarde "+(labels.length+1);
-    const key = label.toLowerCase();
-    if(seen.has(key)) continue; seen.add(key);
+    let key = label.toLowerCase();
+    if(seen.has(key)){ let n=2; while(seen.has(key+" ("+n+")")) n++; label=label+" ("+n+")"; key=label.toLowerCase(); }  // uniek i.p.v. wegvallen
+    seen.add(key);
     labels.push(label); vals.push(v);
   }
   return { labels, series:[{ naam:"Waarde", waarden:vals }] };
@@ -475,6 +480,12 @@ function withAlpha(hex,a){
 // kleur voor de i-e reeks (staaf/lijn) of het i-e segment (taart/donut).
 // Valt terug op de huisstijlvolgorde als er meer categorieën dan ingestelde kleuren zijn.
 function catColor(i){ return state.kleuren.reeks[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]; }
+// WCAG-contrastratio tussen twee kleuren
+function contrastRatio(a,b){ const L1=relLum(a),L2=relLum(b),hi=Math.max(L1,L2),lo=Math.min(L1,L2); return (hi+0.05)/(lo+0.05); }
+// leesbare inkt (donker of wit) tegen achtergrond bg — voor labels ín een gekleurd vlak
+function bestInk(bg){ return contrastRatio("#0b1b33",bg) >= contrastRatio("#ffffff",bg) ? "#0b1b33" : "#ffffff"; }
+// markeringkleur die zichtbaar blijft: val terug op tekstkleur als de reekskleur te weinig contrast met de achtergrond heeft
+function markColor(col){ return contrastRatio(col, state.kleuren.achtergrond) < 3 ? state.kleuren.tekst : col; }
 function niceScale(min,max,ticks){
   if(min===max){ max = min+1; }
   const range = niceNum(max-min,false);
@@ -520,13 +531,14 @@ function render(){
   const ctx=canvas.getContext("2d");
 
   const bg=state.kleuren.achtergrond;
-  const ink=state.kleuren.tekst;
   const darkBg=isDark(bg);
-  const muted = darkBg? "rgba(255,255,255,.62)" : "#8a97a8";
+  let ink=state.kleuren.tekst;
+  if(contrastRatio(ink,bg) < 3) ink = darkBg ? "#ffffff" : "#0b1b33";   // vangnet: nooit onleesbare tekst
+  const muted = darkBg? "rgba(255,255,255,.62)" : "#616d80";            // #616d80 haalt AA (>=4.5:1) op wit én lichtgrijs
   const grid  = darkBg? "rgba(255,255,255,.14)" : "#e6e9f0";
   const axis  = darkBg? "rgba(255,255,255,.35)" : "#c7d0de";
   const F=HUISSTIJL.fontFamily;
-  const S=h/1080;                       // schaalfactor t.o.v. 1080p
+  const S=Math.min(w,h)/1080;           // schaal op de KLEINSTE dimensie -> geen opgeblazen tekst bij verticaal
 
   ctx.clearRect(0,0,w,h);
   ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
@@ -641,7 +653,7 @@ function drawBars(ctx,plot,data,C,horizontal){
   const {S,F,ink,muted,axis}=C;
   const ns=data.series.length, nl=data.labels.length;
   let dmin=0,dmax=0;
-  data.series.forEach(s=>s.waarden.forEach(v=>{ dmax=Math.max(dmax,v); dmin=Math.min(dmin,v); }));
+  data.series.forEach(s=>s.waarden.forEach(v=>{ if(v==null) return; dmax=Math.max(dmax,v); dmin=Math.min(dmin,v); }));
   const sc=niceScale(dmin,dmax,6);
 
   if(!horizontal){
@@ -676,7 +688,7 @@ function drawBars(ctx,plot,data,C,horizontal){
     // horizontaal: labels links
     ctx.font=`600 ${Math.round(25*S)}px ${F}`;
     let lw=0; data.labels.forEach(l=>lw=Math.max(lw,ctx.measureText(l).width)); lw=Math.min(lw+20*S, plot.w*0.32);
-    const p={x:plot.x+lw,y:plot.y,w:plot.w-lw,h:plot.h};
+    const p={x:plot.x+lw,y:plot.y,w:plot.w-lw,h:plot.h-Math.round(44*S)};  // ruimte voor de x-as-getallen boven de voetlijn
     const scx=niceScale(dmin,dmax,6);
     // verticale rasterlijnen
     ctx.strokeStyle=C.grid; ctx.lineWidth=Math.max(1,1*S); ctx.font=`500 ${Math.round(23*S)}px ${F}`;
@@ -697,7 +709,7 @@ function drawBars(ctx,plot,data,C,horizontal){
         ctx.fillStyle=catColor(j);
         const left=Math.min(vx,zeroX), wid=Math.abs(vx-zeroX);
         drawRR(ctx,left,y,wid,bhe,Math.round(5*S), v>=0?"right":"left");
-        if(state.toonWaarden){
+        if(state.toonWaarden && (ns*nl)<=28){
           ctx.fillStyle=ink; ctx.font=`700 ${Math.round(23*S)}px ${F}`;
           ctx.textAlign="left"; ctx.textBaseline="middle";
           ctx.fillText(fmtNum(v), Math.max(vx,zeroX)+Math.round(8*S), y+bhe/2);
@@ -734,6 +746,11 @@ function drawStacked(ctx,plot,data,C){
   const {S,F,ink,muted,axis}=C;
   const nl=data.labels.length, ns=data.series.length;
   const totals=data.labels.map((_,i)=>data.series.reduce((a,s)=>a+Math.max(0,s.waarden[i]||0),0));
+  if(Math.max(...totals) <= 0){                                  // alleen negatieve/lege data -> melding i.p.v. lege grafiek
+    ctx.fillStyle=muted; ctx.textAlign="center"; ctx.font=`500 ${Math.round(30*S)}px ${F}`;
+    ctx.fillText("Gestapeld kan geen negatieve waarden tonen", plot.x+plot.w/2, plot.y+plot.h/2);
+    ctx.textAlign="left"; return;
+  }
   const sc=niceScale(0,Math.max(...totals,1),6);
   const axW=measureYAxis(ctx,sc,C,fmtNum);
   const p={x:plot.x+axW,y:plot.y,w:plot.w-axW,h:plot.h-Math.round(44*S)};
@@ -763,7 +780,7 @@ function drawLine(ctx,plot,data,C,area){
   const {S,F,ink,muted,axis}=C;
   const nl=data.labels.length, ns=data.series.length;
   let dmin=0,dmax=0;
-  data.series.forEach(s=>s.waarden.forEach(v=>{ dmax=Math.max(dmax,v); dmin=Math.min(dmin,v); }));
+  data.series.forEach(s=>s.waarden.forEach(v=>{ if(v==null) return; dmax=Math.max(dmax,v); dmin=Math.min(dmin,v); }));
   const sc=niceScale(dmin,dmax,6);
   const axW=measureYAxis(ctx,sc,C,fmtNum);
   const p={x:plot.x+axW,y:plot.y,w:plot.w-axW,h:plot.h-Math.round(44*S)};
@@ -773,24 +790,29 @@ function drawLine(ctx,plot,data,C,area){
   const Y=v=> p.y+p.h-((v-sc.min)/(sc.max-sc.min))*p.h;
   for(let j=0;j<ns;j++){
     const col=catColor(j);
-    const pts=data.series[j].waarden.map((v,i)=>[X(i),Y(v||0)]);
-    if(area && ns<=2){
+    const vals=data.series[j].waarden;
+    const pts=vals.map((v,i)=> v==null ? null : [X(i),Y(v)]);   // ontbrekende meting = gat
+    const heeftGat=pts.some(p=>!p);
+    if(area && ns<=2 && !heeftGat){
       ctx.beginPath(); ctx.moveTo(pts[0][0],Y(Math.max(0,sc.min)));
       pts.forEach(pt=>ctx.lineTo(pt[0],pt[1]));
       ctx.lineTo(pts[pts.length-1][0],Y(Math.max(0,sc.min)));
       ctx.closePath(); ctx.fillStyle=withAlpha(col,.16); ctx.fill();
     }
     ctx.strokeStyle=col; ctx.lineWidth=Math.max(2,3*S); ctx.lineJoin="round"; ctx.lineCap="round";
-    ctx.beginPath(); pts.forEach((pt,i)=> i?ctx.lineTo(pt[0],pt[1]):ctx.moveTo(pt[0],pt[1])); ctx.stroke();
+    ctx.beginPath(); let started=false;
+    pts.forEach(pt=>{ if(!pt){ started=false; return; } if(started) ctx.lineTo(pt[0],pt[1]); else { ctx.moveTo(pt[0],pt[1]); started=true; } });
+    ctx.stroke();
     // markers + waarde-labels
     pts.forEach((pt,i)=>{
+      if(!pt) return;
       ctx.fillStyle=state.kleuren.achtergrond; ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(5,6*S),0,7); ctx.fill();
       ctx.fillStyle=col; ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(3.5,4.5*S),0,7); ctx.fill();
       if(state.toonWaarden && ns<=2 && nl<=14){
         const above = j%2===0;                      // reeksen wijken boven/onder uit -> geen overlap
         ctx.fillStyle=ink; ctx.font=`700 ${Math.round(22*S)}px ${F}`; ctx.textAlign="center";
         ctx.textBaseline= above?"bottom":"top";
-        ctx.fillText(fmtNum(data.series[j].waarden[i]||0), pt[0], pt[1]+(above?-Math.round(12*S):Math.round(12*S)));
+        ctx.fillText(fmtNum(vals[i]), pt[0], pt[1]+(above?-Math.round(12*S):Math.round(12*S)));
         ctx.textBaseline="top";
       }
     });
@@ -809,6 +831,11 @@ function drawPie(ctx,plot,data,C,innerRatio){
   const s=data.series[0];
   const items=data.labels.map((l,i)=>({l, v:Math.max(0,s.waarden[i]||0), c:catColor(i)}))
                          .filter(it=>it.v>0);
+  if(!items.length){                                              // geen positieve waarden -> melding i.p.v. leeg canvas
+    ctx.fillStyle=muted; ctx.textAlign="center"; ctx.font=`500 ${Math.round(30*S)}px ${F}`;
+    ctx.fillText("Geen positieve waarden voor een taart-/donutgrafiek", plot.x+plot.w/2, plot.y+plot.h/2);
+    ctx.textAlign="left"; return;
+  }
   const total=items.reduce((a,it)=>a+it.v,0)||1;
   const cx=plot.x+plot.w*0.34, cy=plot.y+plot.h/2, R=Math.min(plot.w*0.30,plot.h*0.42);
   let a=-Math.PI/2;
@@ -820,7 +847,7 @@ function drawPie(ctx,plot,data,C,innerRatio){
     // percentage-label
     if(ang>0.28){
       const mid=a+ang/2, lr=innerRatio>0? R*(1+innerRatio)/2 : R*0.62;
-      ctx.fillStyle= innerRatio>0? ink : "#ffffff";
+      ctx.fillStyle= bestInk(it.c);                                // leesbaar op ELKE segmentkleur
       ctx.font=`800 ${Math.round(26*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="middle";
       ctx.fillText(Math.round(it.v/total*100)+"%", cx+Math.cos(mid)*lr, cy+Math.sin(mid)*lr);
     }
@@ -834,18 +861,24 @@ function drawPie(ctx,plot,data,C,innerRatio){
     ctx.fillStyle=muted; ctx.font=`600 ${Math.round(22*S)}px ${F}`; ctx.textBaseline="top";
     ctx.fillText("totaal", cx, cy+Math.round(14*S));
   }
-  // legenda rechts
+  // legenda rechts (begrensd tot wat past; rest als "+ N meer")
   ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.font=`600 ${Math.round(27*S)}px ${F}`;
-  const lx=plot.x+plot.w*0.66; let ly=cy-(items.length*Math.round(46*S))/2+Math.round(20*S);
-  items.forEach(it=>{
+  const lx=plot.x+plot.w*0.66, rowH=Math.round(46*S);
+  const maxRows=Math.max(1, Math.floor(plot.h/rowH));
+  const overflow=items.length>maxRows;
+  const shown=overflow? items.slice(0, maxRows-1) : items;
+  let ly=Math.max(plot.y+Math.round(20*S), cy-((shown.length+(overflow?1:0))*rowH)/2+Math.round(20*S));
+  shown.forEach(it=>{
     ctx.fillStyle=it.c; const b=Math.round(24*S);
     ctx.beginPath(); ctx.roundRect?ctx.roundRect(lx,ly-b/2,b,b,Math.round(6*S)):ctx.rect(lx,ly-b/2,b,b); ctx.fill();
     ctx.fillStyle=ink;
     ctx.fillText(fitLabel(ctx,`${it.l}`,plot.w*0.30)+"  ", lx+b+Math.round(12*S), ly);
     const tw=ctx.measureText(it.l).width;
     ctx.fillStyle=muted; ctx.fillText(fmtNum(it.v)+" · "+Math.round(it.v/total*100)+"%", lx+b+Math.round(12*S)+tw+Math.round(16*S), ly);
-    ly+=Math.round(46*S);
+    ly+=rowH;
   });
+  if(overflow){ ctx.fillStyle=muted; ctx.font=`600 ${Math.round(24*S)}px ${F}`;
+    ctx.fillText("+ "+(items.length-shown.length)+" meer", lx, ly); }
   ctx.textBaseline="top";
 }
 
@@ -864,7 +897,7 @@ function drawLollipop(ctx,plot,data,C){
   for(const t of sc.ticks){ const x=p.x+((t-sc.min)/(sc.max-sc.min))*p.w;
     ctx.beginPath(); ctx.moveTo(x,p.y); ctx.lineTo(x,p.y+p.h); ctx.stroke();
     ctx.fillStyle=muted; ctx.fillText(fmtNum(t),x,p.y+p.h+Math.round(8*S)); }
-  const band=p.h/items.length, col=catColor(0);
+  const band=p.h/items.length, col=markColor(catColor(0));
   items.forEach((it,i)=>{
     const cy=p.y+band*i+band/2, vx=p.x+((it.v-sc.min)/(sc.max-sc.min))*p.w;
     ctx.strokeStyle=col; ctx.lineWidth=Math.max(2,3*S); ctx.lineCap="round";
@@ -879,13 +912,16 @@ function drawLollipop(ctx,plot,data,C){
 }
 
 function drawKpi(ctx,plot,data,C){
-  const {S,F,ink,muted}=C;
+  const {S,F,ink}=C;
   const s=data.series[0];
-  const v=s.waarden.find(x=>x)|| s.waarden[0] || 0;
-  const label=data.labels[0]||s.naam||"";
-  ctx.textAlign="center";
-  ctx.fillStyle=catColor(0); ctx.font=`800 ${Math.round(220*S)}px ${F}`; ctx.textBaseline="alphabetic";
-  ctx.fillText(fmtNum(v), plot.x+plot.w/2, plot.y+plot.h*0.56);
+  let idx=s.waarden.findIndex(x=>x!=null && !isNaN(x)); if(idx<0) idx=0;   // eerste geldige rij (0 is geldig)
+  const v=s.waarden[idx] ?? 0;
+  const label=data.labels[idx]||s.naam||"";                                // label hoort bij hetzelfde getal
+  ctx.textAlign="center"; ctx.textBaseline="alphabetic";
+  const numTxt=fmtNum(v), maxW=plot.w*0.9;
+  let fs=Math.round(220*S); ctx.fillStyle=markColor(catColor(0)); ctx.font=`800 ${fs}px ${F}`;
+  while(fs>12 && ctx.measureText(numTxt).width>maxW){ fs-=4; ctx.font=`800 ${fs}px ${F}`; }  // krimp zodat het past
+  ctx.fillText(numTxt, plot.x+plot.w/2, plot.y+plot.h*0.56);
   ctx.fillStyle=ink; ctx.font=`600 ${Math.round(40*S)}px ${F}`; ctx.textBaseline="top";
   ctx.fillText(fitLabel(ctx,label,plot.w*0.9), plot.x+plot.w/2, plot.y+plot.h*0.6);
   ctx.textAlign="left";
@@ -910,7 +946,7 @@ function buildTypePicker(){
 function buildDataTable(){
   const t=$("datatable"); const d=state.data; t.innerHTML="";
   const thead=document.createElement("tr");
-  thead.innerHTML=`<th>Label</th>`+d.series.map((s,j)=>`<th><input data-s="${j}" class="snaam" value="${escapeAttr(s.naam)}"></th>`).join("")+`<th></th>`;
+  thead.innerHTML=`<th>Label</th>`+d.series.map((s,j)=>`<th><input data-s="${j}" class="snaam" value="${escapeAttr(s.naam)}">${d.series.length>1?`<button class="icon-btn" data-dels="${j}" title="Reeks verwijderen">✕</button>`:""}</th>`).join("")+`<th></th>`;
   t.appendChild(thead);
   d.labels.forEach((lab,i)=>{
     const tr=document.createElement("tr");
@@ -923,14 +959,19 @@ function buildDataTable(){
   t.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.del;
     state.data.labels.splice(i,1); state.data.series.forEach(s=>s.waarden.splice(i,1));
     buildDataTable(); render(); });
+  t.querySelectorAll("[data-dels]").forEach(b=>b.onclick=()=>{ const j=+b.dataset.dels;
+    if(state.data.series.length<=1) return;                       // minstens één reeks houden
+    state.data.series.splice(j,1); state.kleuren.reeks.splice(j,1);
+    buildDataTable(); buildColorControls(); render(); });
 }
 function onTableEdit(e){
   const el=e.target, d=state.data;
   if(el.dataset.l!=null) d.labels[+el.dataset.l]=el.value;
   else if(el.dataset.s!=null) d.series[+el.dataset.s].naam=el.value;
-  else if(el.dataset.r!=null){ const v=parseNum(el.value); d.series[+el.dataset.c].waarden[+el.dataset.r]= isNaN(v)?0:v; }
+  else if(el.dataset.r!=null){ const raw=el.value.trim(); const v=parseNum(raw);
+    d.series[+el.dataset.c].waarden[+el.dataset.r] = raw==="" ? null : (isNaN(v)?0:v); }   // leeg = gat
 }
-function escapeAttr(s){ return String(s).replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+function escapeAttr(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
 
 function buildColorControls(){
   // achtergrond
@@ -988,8 +1029,9 @@ function generate(){
   const parsed=parseInput(raw);
   if(!parsed.labels.length){ alert("Geen data gevonden. Plak cijfers of gebruik ‘Cijfers uit tekst halen’."); return; }
   state.data=parsed;
-  // reset reekskleuren op huisstijlvolgorde als aantal reeksen wijzigde
-  state.kleuren.reeks = state.data.series.map((_,i)=>HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
+  // behoud eerder gekozen reekskleuren bij opnieuw genereren; vul alleen nieuwe reeksen aan
+  const vorige = state.kleuren.reeks || [];
+  state.kleuren.reeks = state.data.series.map((_,i)=> vorige[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
   state.gegenereerd=true;
   $("empty").classList.add("hidden");
   $("preview").classList.remove("hidden");
@@ -1002,7 +1044,9 @@ function generate(){
 
 function downloadPng(){
   const canvas=$("preview");
-  const naam=(($("titel").value.trim()||"grafiek").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""))+"-"+state.formaat.w+"x"+state.formaat.h;
+  let slug=$("titel").value.trim().normalize("NFKD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  if(!slug) slug="grafiek";                                       // diacritieken -> ascii, dan pas terugval
+  const naam=slug+"-"+state.formaat.w+"x"+state.formaat.h;
   canvas.toBlob(blob=>{
     const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=naam+".png";
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
