@@ -74,27 +74,33 @@ de tool maakt er automatisch een **gegroepeerde** grafiek van.
 ## De huisstijl instellen (belangrijk)
 
 De kleuren en het lettertype staan bovenaan in `index.html` in het blok
-`HUISSTIJL`. **Vervang de hex-codes door de exacte RTV Oost-huisstijlkleuren**
-(uit de `rtv-oost-huisstijl` / `rtv-oost-datavisual` skill). De nu ingevulde
-waarden zijn een nette benadering met **Oost-blauw** als hoofdkleur; de overige
-reekskleuren zijn kleurenblind-veilig getoetst.
+`HUISSTIJL`. Daar staan nu de **exacte RTV Oost-huisstijlkleuren**:
 
 ```js
 const HUISSTIJL = {
   fontFamily: "Roobert, Inter, 'Helvetica Neue', Arial, sans-serif",
   palet: [
-    { naam:"Oost-blauw", hex:"#0b5fd6" },   // <-- vul hier de exacte huisstijl-hex in
-    ...
+    { naam:"Oost-blauw",       hex:"#1361ff" },
+    { naam:"Oost-oranje",      hex:"#ff6813" },
+    { naam:"Oost-groen",       hex:"#abbf3d" },
+    { naam:"Oost-paars",       hex:"#8f00ff" },
+    { naam:"Oost-rood",        hex:"#ff4242" },
+    { naam:"Oost-geel",        hex:"#ffaf16" },
+    { naam:"Oost-donkerblauw", hex:"#131720" },
   ],
-  reeksVolgorde: ["#0b5fd6", "#1baf7a", ...],
+  // CVD-geoptimaliseerde reeksvolgorde (rood en groen niet naast elkaar)
+  reeksVolgorde: ["#1361ff","#ff6813","#abbf3d","#8f00ff","#ff4242","#ffaf16","#131720"],
   ...
 };
 ```
 
-- **Lettertype:** de tool gebruikt **Roobert** als dat op de computer is
-  geïnstalleerd; anders valt hij netjes terug op een systeemletter. Wil je
-  Roobert overal garanderen, installeer het lettertype op de redactie-computers
-  (Roobert is een betaald lettertype, dus niet meegeleverd).
+Achtergronden: wit, Oost-lichtblauw `#e7eef9`, Oost-blauw `#1361ff` en
+Oost-donkerblauw `#131720`. De reeksvolgorde is getoetst met de dataviz-validator
+(kleurenblind-veilig, worst adjacent ΔE 14.4). Oost-geel is fel, daarom staan
+waarde-labels en de datatabel standaard aan.
+
+- **Lettertype:** de tool gebruikt **Roobert** (staat op de redactie-computers);
+  op een computer zonder Roobert valt hij netjes terug op een systeemletter.
 - **Logo:** rechtsonder staat nu een tekst-badge "Oost". Wil je het echte logo?
   Vervang `drawLogo()` door het tekenen van een ingesloten logo-afbeelding
   (als data-URL).

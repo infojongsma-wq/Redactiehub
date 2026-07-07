@@ -14,9 +14,9 @@
 <style>
   /* ---- HUISSTIJL: kleuren van de INTERFACE (niet van de grafiek) ---- */
   :root{
-    --oost-blauw:#0b5fd6;
-    --oost-donker:#0d366b;
-    --ink:#0b1b33;
+    --oost-blauw:#1361ff;
+    --oost-donker:#131720;
+    --ink:#131720;
     --ink-2:#5b6b82;
     --lijn:#e3e8f0;
     --vlak:#f5f7fb;
@@ -92,7 +92,7 @@
   }
   .btn:hover{border-color:var(--oost-blauw)}
   .btn.primary{background:var(--oost-blauw);color:#fff;border-color:var(--oost-blauw)}
-  .btn.primary:hover{background:#0a51ba}
+  .btn.primary:hover{background:#0d4ad9}
   .btn.big{width:100%;padding:13px;font-size:16px;margin-top:4px}
   .btn.ghost{background:transparent}
   .btnrow{display:flex;gap:8px;flex-wrap:wrap}
@@ -248,17 +248,20 @@
   <details class="tips">
     <summary>Tips &amp; huisstijl instellen</summary>
     <div class="note">
-      <b>Exacte huisstijlkleuren instellen:</b> bovenaan de code (het blok <code>HUISSTIJL</code>) staan de kleuren.
-      Vervang de hex-codes door de exacte waarden uit de RTV Oost-huisstijl. Het lettertype <b>Roobert</b> wordt
-      gebruikt als het op de computer is geïnstalleerd; anders valt hij netjes terug op een systeemletter.
+      De <b>exacte RTV Oost-huisstijlkleuren</b> staan ingesteld (blok <code>HUISSTIJL</code> bovenaan de code),
+      met <b>Oost-blauw</b> als hoofdkleur. Het lettertype <b>Roobert</b> wordt gebruikt; op een computer zonder
+      Roobert valt de tool netjes terug op een systeemletter. De reeksvolgorde is kleurenblind-veilig getoetst.
     </div>
   </details>
 </div>
 
 <script>
 /* ============================================================================
-   1. HUISSTIJL  —  pas hier de EXACTE RTV Oost-kleuren aan.
-   De secundaire reekskleuren zijn kleurenblind-veilig getoetst (dataviz-skill).
+   1. HUISSTIJL  —  EXACTE RTV Oost-kleuren.
+   Reeksvolgorde is kleurenblind-veilig getoetst (dataviz-validator):
+   worst adjacent CVD ΔE 14.4 (> doel 12); rood en groen staan niet naast elkaar.
+   Oost-geel is fel (buiten de lichtheidsband) -> daarom staan waarde-labels en
+   de datatabel standaard aan (de "relief"-regel).
    ========================================================================== */
 const HUISSTIJL = {
   fontFamily: "Roobert, Inter, 'Helvetica Neue', Arial, sans-serif",
@@ -266,29 +269,27 @@ const HUISSTIJL = {
 
   // Genoemde merkkleuren — deze verschijnen in de kleurkiezers.
   palet: [
-    { naam:"Oost-blauw",   hex:"#0b5fd6" },
-    { naam:"Donkerblauw",  hex:"#0d366b" },
-    { naam:"Aqua",         hex:"#1baf7a" },
-    { naam:"Geel",         hex:"#eda100" },
-    { naam:"Groen",        hex:"#008300" },
-    { naam:"Paars",        hex:"#4a3aa7" },
-    { naam:"Rood",         hex:"#e34948" },
-    { naam:"Roze",         hex:"#e87ba4" },
-    { naam:"Oranje",       hex:"#eb6834" },
+    { naam:"Oost-blauw",       hex:"#1361ff" },
+    { naam:"Oost-oranje",      hex:"#ff6813" },
+    { naam:"Oost-groen",       hex:"#abbf3d" },
+    { naam:"Oost-paars",       hex:"#8f00ff" },
+    { naam:"Oost-rood",        hex:"#ff4242" },
+    { naam:"Oost-geel",        hex:"#ffaf16" },
+    { naam:"Oost-donkerblauw", hex:"#131720" },
   ],
-  // Volgorde waarin reeksen standaard gekleurd worden (vaste volgorde, niet cyclisch).
-  reeksVolgorde: ["#0b5fd6","#1baf7a","#eda100","#008300","#4a3aa7","#e34948","#e87ba4","#eb6834"],
+  // Vaste, niet-cyclische reeksvolgorde (CVD-geoptimaliseerd).
+  reeksVolgorde: ["#1361ff","#ff6813","#abbf3d","#8f00ff","#ff4242","#ffaf16","#131720"],
 
   achtergronden: [
-    { naam:"Wit",         hex:"#ffffff" },
-    { naam:"Lichtgrijs",  hex:"#f5f7fb" },
-    { naam:"Oost-blauw",  hex:"#0b5fd6" },
-    { naam:"Donkerblauw", hex:"#0d366b" },
+    { naam:"Wit",              hex:"#ffffff" },
+    { naam:"Oost-lichtblauw",  hex:"#e7eef9" },
+    { naam:"Oost-blauw",       hex:"#1361ff" },
+    { naam:"Oost-donkerblauw", hex:"#131720" },
   ],
   teksten: [
-    { naam:"Donker", hex:"#0b1b33" },
-    { naam:"Wit",    hex:"#ffffff" },
-    { naam:"Blauw",  hex:"#0b5fd6" },
+    { naam:"Donkerblauw", hex:"#131720" },
+    { naam:"Wit",         hex:"#ffffff" },
+    { naam:"Oost-blauw",  hex:"#1361ff" },
   ],
 };
 
@@ -316,7 +317,7 @@ const state = {
   formaat: { w:1920, h:1080, id:"web" },
   kleuren: {
     achtergrond: "#ffffff",
-    tekst: "#0b1b33",
+    tekst: "#131720",
     reeks: HUISSTIJL.reeksVolgorde.slice(),
   },
   toonWaarden: true,
@@ -483,7 +484,7 @@ function catColor(i){ return state.kleuren.reeks[i] || HUISSTIJL.reeksVolgorde[i
 // WCAG-contrastratio tussen twee kleuren
 function contrastRatio(a,b){ const L1=relLum(a),L2=relLum(b),hi=Math.max(L1,L2),lo=Math.min(L1,L2); return (hi+0.05)/(lo+0.05); }
 // leesbare inkt (donker of wit) tegen achtergrond bg — voor labels ín een gekleurd vlak
-function bestInk(bg){ return contrastRatio("#0b1b33",bg) >= contrastRatio("#ffffff",bg) ? "#0b1b33" : "#ffffff"; }
+function bestInk(bg){ return contrastRatio("#131720",bg) >= contrastRatio("#ffffff",bg) ? "#131720" : "#ffffff"; }
 // markeringkleur die zichtbaar blijft: val terug op tekstkleur als de reekskleur te weinig contrast met de achtergrond heeft
 function markColor(col){ return contrastRatio(col, state.kleuren.achtergrond) < 3 ? state.kleuren.tekst : col; }
 function niceScale(min,max,ticks){
@@ -533,7 +534,7 @@ function render(){
   const bg=state.kleuren.achtergrond;
   const darkBg=isDark(bg);
   let ink=state.kleuren.tekst;
-  if(contrastRatio(ink,bg) < 3) ink = darkBg ? "#ffffff" : "#0b1b33";   // vangnet: nooit onleesbare tekst
+  if(contrastRatio(ink,bg) < 3) ink = darkBg ? "#ffffff" : "#131720";   // vangnet: nooit onleesbare tekst
   const muted = darkBg? "rgba(255,255,255,.62)" : "#616d80";            // #616d80 haalt AA (>=4.5:1) op wit én lichtgrijs
   const grid  = darkBg? "rgba(255,255,255,.14)" : "#e6e9f0";
   const axis  = darkBg? "rgba(255,255,255,.35)" : "#c7d0de";
@@ -609,9 +610,9 @@ function drawLogo(ctx,xRight,yBase,S,ink,darkBg){
   const w=ctx.measureText(txt).width, padx=Math.round(12*S), pady=Math.round(6*S);
   const boxW=w+padx*2, boxH=Math.round(46*S);
   const bx=xRight-boxW, by=yBase-boxH+Math.round(20*S);
-  ctx.fillStyle= darkBg? "#ffffff" : "#0d366b";
+  ctx.fillStyle= darkBg? "#ffffff" : "#131720";
   ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx,by,boxW,boxH,Math.round(8*S)) : ctx.rect(bx,by,boxW,boxH); ctx.fill();
-  ctx.fillStyle= darkBg? "#0d366b" : "#ffffff";
+  ctx.fillStyle= darkBg? "#131720" : "#ffffff";
   ctx.fillText(txt, xRight-padx, by+boxH-pady*2.1);
   ctx.textAlign="left";
 }
@@ -979,8 +980,8 @@ function buildColorControls(){
   HUISSTIJL.achtergronden.forEach(c=>bg.appendChild(swatch(c.hex,c.naam, state.kleuren.achtergrond===c.hex, ()=>{
     state.kleuren.achtergrond=c.hex;
     // automatische leesbare tekstkleur bij donkere achtergrond
-    if(isDark(c.hex) && state.kleuren.tekst==="#0b1b33") state.kleuren.tekst="#ffffff";
-    if(!isDark(c.hex) && state.kleuren.tekst==="#ffffff") state.kleuren.tekst="#0b1b33";
+    if(isDark(c.hex) && state.kleuren.tekst==="#131720") state.kleuren.tekst="#ffffff";
+    if(!isDark(c.hex) && state.kleuren.tekst==="#ffffff") state.kleuren.tekst="#131720";
     buildColorControls(); render();
   })));
   // tekst
@@ -1088,15 +1089,15 @@ $("btnSample").onclick=()=>{ $("raw").value="Regio\tMeldingen\nTwente\t352\nIJss
   $("titel").value="Meeste meldingen in IJsselland"; $("ondertitel").value="Aantal meldingen per regio, 2025"; $("bron").value="Provincie Overijssel"; };
 
 /* ---- kleine SVG-iconen voor de type-picker ---- */
-function iconKolom(){return `<svg viewBox="0 0 40 34"><g fill="#0b5fd6"><rect x="4" y="18" width="7" height="14" rx="1.5"/><rect x="16" y="8" width="7" height="24" rx="1.5"/><rect x="28" y="22" width="7" height="10" rx="1.5"/></g></svg>`}
-function iconStaaf(){return `<svg viewBox="0 0 40 34"><g fill="#0b5fd6"><rect x="2" y="4" width="24" height="7" rx="1.5"/><rect x="2" y="14" width="34" height="7" rx="1.5"/><rect x="2" y="24" width="16" height="7" rx="1.5"/></g></svg>`}
-function iconGestapeld(){return `<svg viewBox="0 0 40 34"><g><rect x="7" y="16" width="9" height="16" rx="1.5" fill="#0b5fd6"/><rect x="7" y="8" width="9" height="8" rx="1.5" fill="#1baf7a"/><rect x="24" y="12" width="9" height="20" rx="1.5" fill="#0b5fd6"/><rect x="24" y="5" width="9" height="7" rx="1.5" fill="#1baf7a"/></g></svg>`}
-function iconLijn(){return `<svg viewBox="0 0 40 34" fill="none"><polyline points="4,26 14,14 24,20 36,6" stroke="#0b5fd6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="14" r="3" fill="#0b5fd6"/><circle cx="24" cy="20" r="3" fill="#0b5fd6"/></svg>`}
-function iconVlak(){return `<svg viewBox="0 0 40 34"><polygon points="4,28 4,20 14,10 24,16 36,4 36,28" fill="#0b5fd6" opacity=".22"/><polyline points="4,20 14,10 24,16 36,4" stroke="#0b5fd6" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
-function iconTaart(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r="14" fill="#0b5fd6"/><path d="M20 17 L20 3 A14 14 0 0 1 33 21 Z" fill="#1baf7a"/><path d="M20 17 L33 21 A14 14 0 0 1 24 30 Z" fill="#eda100"/></svg>`}
-function iconDonut(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r="14" fill="#0b5fd6"/><path d="M20 17 L20 3 A14 14 0 0 1 33 21 Z" fill="#1baf7a"/><circle cx="20" cy="17" r="6.5" fill="#fff"/></svg>`}
-function iconLolli(){return `<svg viewBox="0 0 40 34"><g stroke="#0b5fd6" stroke-width="2.5"><line x1="4" y1="8" x2="26" y2="8"/><line x1="4" y1="17" x2="34" y2="17"/><line x1="4" y1="26" x2="16" y2="26"/></g><g fill="#0b5fd6"><circle cx="26" cy="8" r="4"/><circle cx="34" cy="17" r="4"/><circle cx="16" cy="26" r="4"/></g></svg>`}
-function iconKpi(){return `<svg viewBox="0 0 40 34"><text x="20" y="24" font-size="22" font-weight="800" text-anchor="middle" fill="#0b5fd6" font-family="Arial">73%</text></svg>`}
+function iconKolom(){return `<svg viewBox="0 0 40 34"><g fill="#1361ff"><rect x="4" y="18" width="7" height="14" rx="1.5"/><rect x="16" y="8" width="7" height="24" rx="1.5"/><rect x="28" y="22" width="7" height="10" rx="1.5"/></g></svg>`}
+function iconStaaf(){return `<svg viewBox="0 0 40 34"><g fill="#1361ff"><rect x="2" y="4" width="24" height="7" rx="1.5"/><rect x="2" y="14" width="34" height="7" rx="1.5"/><rect x="2" y="24" width="16" height="7" rx="1.5"/></g></svg>`}
+function iconGestapeld(){return `<svg viewBox="0 0 40 34"><g><rect x="7" y="16" width="9" height="16" rx="1.5" fill="#1361ff"/><rect x="7" y="8" width="9" height="8" rx="1.5" fill="#ff6813"/><rect x="24" y="12" width="9" height="20" rx="1.5" fill="#1361ff"/><rect x="24" y="5" width="9" height="7" rx="1.5" fill="#ff6813"/></g></svg>`}
+function iconLijn(){return `<svg viewBox="0 0 40 34" fill="none"><polyline points="4,26 14,14 24,20 36,6" stroke="#1361ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="14" r="3" fill="#1361ff"/><circle cx="24" cy="20" r="3" fill="#1361ff"/></svg>`}
+function iconVlak(){return `<svg viewBox="0 0 40 34"><polygon points="4,28 4,20 14,10 24,16 36,4 36,28" fill="#1361ff" opacity=".22"/><polyline points="4,20 14,10 24,16 36,4" stroke="#1361ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
+function iconTaart(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r="14" fill="#1361ff"/><path d="M20 17 L20 3 A14 14 0 0 1 33 21 Z" fill="#ff6813"/><path d="M20 17 L33 21 A14 14 0 0 1 24 30 Z" fill="#abbf3d"/></svg>`}
+function iconDonut(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r="14" fill="#1361ff"/><path d="M20 17 L20 3 A14 14 0 0 1 33 21 Z" fill="#ff6813"/><circle cx="20" cy="17" r="6.5" fill="#fff"/></svg>`}
+function iconLolli(){return `<svg viewBox="0 0 40 34"><g stroke="#1361ff" stroke-width="2.5"><line x1="4" y1="8" x2="26" y2="8"/><line x1="4" y1="17" x2="34" y2="17"/><line x1="4" y1="26" x2="16" y2="26"/></g><g fill="#1361ff"><circle cx="26" cy="8" r="4"/><circle cx="34" cy="17" r="4"/><circle cx="16" cy="26" r="4"/></g></svg>`}
+function iconKpi(){return `<svg viewBox="0 0 40 34"><text x="20" y="24" font-size="22" font-weight="800" text-anchor="middle" fill="#1361ff" font-family="Arial">73%</text></svg>`}
 
 /* ---- init ---- */
 buildTypePicker();
