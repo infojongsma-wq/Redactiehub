@@ -1,0 +1,1051 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grafiekmaker — Redactiehub Oost</title>
+
+<!--
+  ============================================================================
+  REDACTIEHUB · GRAFIEKMAKER (RTV Oost)
+  Eén zelfstandig HTML-bestand. Geen installatie, geen internet nodig.
+  Open dit bestand in een browser (dubbelklik), of zet het online via
+  GitHub Pages. Alle data blijft op je eigen computer.
+  ============================================================================
+-->
+
+<style>
+  /* ---- HUISSTIJL: kleuren van de INTERFACE (niet van de grafiek) ---- */
+  :root{
+    --oost-blauw:#0b5fd6;
+    --oost-donker:#0d366b;
+    --ink:#0b1b33;
+    --ink-2:#5b6b82;
+    --lijn:#e3e8f0;
+    --vlak:#f5f7fb;
+    --wit:#ffffff;
+    --radius:14px;
+    --font:Roobert, Inter, "Helvetica Neue", Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--font);
+    color:var(--ink);
+    background:var(--vlak);
+    line-height:1.4;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--oost-blauw)}
+
+  header.app{
+    background:var(--oost-donker);
+    color:#fff;
+    padding:14px 22px;
+    display:flex;align-items:center;gap:14px;
+  }
+  header.app .logo{
+    font-weight:800;font-size:22px;letter-spacing:-.5px;
+    background:#fff;color:var(--oost-donker);
+    padding:2px 10px;border-radius:8px;
+  }
+  header.app h1{font-size:17px;margin:0;font-weight:600}
+  header.app .sub{opacity:.7;font-size:13px;margin-left:auto}
+
+  .wrap{
+    display:grid;
+    grid-template-columns:minmax(320px,420px) 1fr;
+    gap:20px;
+    padding:20px;
+    max-width:1600px;margin:0 auto;
+    align-items:start;
+  }
+  @media(max-width:920px){ .wrap{grid-template-columns:1fr} }
+
+  .card{
+    background:var(--wit);
+    border:1px solid var(--lijn);
+    border-radius:var(--radius);
+    padding:18px;
+    margin-bottom:16px;
+  }
+  .card h2{
+    font-size:13px;text-transform:uppercase;letter-spacing:.6px;
+    color:var(--ink-2);margin:0 0 12px;font-weight:700;
+    display:flex;align-items:center;gap:8px;
+  }
+  .card h2 .step{
+    background:var(--oost-blauw);color:#fff;border-radius:50%;
+    width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;
+  }
+  label.fld{display:block;font-size:13px;font-weight:600;margin:10px 0 4px;color:var(--ink)}
+  textarea,input[type=text]{
+    width:100%;font-family:var(--font);font-size:14px;color:var(--ink);
+    border:1px solid var(--lijn);border-radius:10px;padding:9px 11px;background:#fff;
+  }
+  textarea{min-height:130px;resize:vertical;line-height:1.45;font-variant-numeric:tabular-nums}
+  textarea:focus,input:focus{outline:2px solid var(--oost-blauw);outline-offset:-1px;border-color:var(--oost-blauw)}
+  .hint{font-size:12px;color:var(--ink-2);margin:6px 0 0}
+
+  .btn{
+    font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;
+    border:1px solid var(--lijn);background:#fff;color:var(--ink);
+    padding:9px 14px;border-radius:10px;transition:.12s;
+  }
+  .btn:hover{border-color:var(--oost-blauw)}
+  .btn.primary{background:var(--oost-blauw);color:#fff;border-color:var(--oost-blauw)}
+  .btn.primary:hover{background:#0a51ba}
+  .btn.big{width:100%;padding:13px;font-size:16px;margin-top:4px}
+  .btn.ghost{background:transparent}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* chart-type picker */
+  .types{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .type{
+    border:1.5px solid var(--lijn);border-radius:12px;padding:10px 6px 8px;
+    cursor:pointer;text-align:center;background:#fff;transition:.12s;
+  }
+  .type:hover{border-color:var(--oost-blauw)}
+  .type.on{border-color:var(--oost-blauw);background:#eef4ff;box-shadow:inset 0 0 0 1px var(--oost-blauw)}
+  .type svg{width:100%;height:34px;display:block;margin:0 auto 5px}
+  .type span{font-size:11px;font-weight:600;color:var(--ink);display:block;line-height:1.2}
+
+  /* preview */
+  .previewwrap{position:relative;background:var(--vlak);border-radius:12px;padding:14px;border:1px solid var(--lijn)}
+  #preview{width:100%;height:auto;display:block;border-radius:8px;box-shadow:0 2px 14px rgba(11,27,51,.08)}
+  .empty{padding:60px 20px;text-align:center;color:var(--ink-2)}
+  .empty svg{width:64px;height:64px;opacity:.35;margin-bottom:10px}
+
+  /* data table */
+  table.data{border-collapse:collapse;width:100%;font-size:13px}
+  table.data th,table.data td{border:1px solid var(--lijn);padding:0}
+  table.data th{background:var(--vlak);padding:5px 7px;font-weight:600;text-align:left}
+  table.data input{border:0;border-radius:0;padding:6px 8px;font-size:13px}
+  table.data input:focus{outline:2px solid var(--oost-blauw);outline-offset:-2px}
+  table.data td.num input{text-align:right;font-variant-numeric:tabular-nums}
+  table.data td.del{width:26px;text-align:center}
+  .icon-btn{border:0;background:none;cursor:pointer;color:var(--ink-2);font-size:15px;padding:2px 6px;border-radius:6px}
+  .icon-btn:hover{background:#ffe9e9;color:#c0392b}
+
+  /* swatches */
+  .swatchrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 4px}
+  .swatch{
+    width:26px;height:26px;border-radius:7px;cursor:pointer;border:2px solid rgba(11,27,51,.12);
+    position:relative;transition:.1s;
+  }
+  .swatch:hover{transform:scale(1.08)}
+  .swatch.on{border-color:var(--ink);box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--oost-blauw)}
+  .swatch[data-hex="#ffffff"]{border-color:var(--lijn)}
+  .seriescolor{display:flex;align-items:center;gap:8px;margin:6px 0}
+  .seriescolor .nm{font-size:12px;font-weight:600;min-width:70px;color:var(--ink)}
+  .colgrp{margin-bottom:14px}
+  .colgrp > .lbl{font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:3px}
+
+  .toggle{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin:8px 0;cursor:pointer}
+  .toggle input{width:16px;height:16px}
+  details.tips{margin-top:6px}
+  details.tips summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--oost-blauw)}
+  .sizes{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 2px}
+  .sizebtn{flex:1;min-width:90px;text-align:center}
+  .hidden{display:none !important}
+  .note{background:#fff8e6;border:1px solid #f0dca0;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#6b5a1f;margin-top:8px}
+</style>
+
+<header class="app">
+  <span class="logo">Oost</span>
+  <h1>Grafiekmaker · Redactiehub</h1>
+  <span class="sub">datavisualisatie in de huisstijl</span>
+</header>
+
+<div class="wrap">
+
+  <!-- ===================== LINKERKOLOM: INVOER ===================== -->
+  <div class="col-left">
+
+    <div class="card">
+      <h2><span class="step">1</span> Data of tekst</h2>
+      <label class="fld" for="raw">Plak je data (uit Excel/CSV) of typ het zelf</label>
+      <textarea id="raw" spellcheck="false" placeholder="Voorbeeld — plak uit Excel of typ:&#10;&#10;Twente&#9;35&#10;IJsselland&#9;56&#10;Vechtdal&#9;28&#10;&#10;of typ regels als:  Twente: 35"></textarea>
+      <div class="btnrow" style="margin-top:8px">
+        <button class="btn" id="btnFile">📄 Bestand kiezen…</button>
+        <button class="btn" id="btnText">🔍 Cijfers uit tekst halen</button>
+        <button class="btn ghost" id="btnSample">Voorbeeld</button>
+      </div>
+      <input type="file" id="file" accept=".csv,.tsv,.txt" class="hidden">
+      <p class="hint">Werkt met tab, puntkomma (;) of komma. Kopiëren uit Excel plakt automatisch goed. Nederlandse getallen (35,6 en 1.200) worden herkend.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="step">2</span> Teksten</h2>
+      <label class="fld" for="titel">Titel</label>
+      <input type="text" id="titel" placeholder="Bijv. Meeste meldingen in Twente">
+      <label class="fld" for="ondertitel">Ondertitel</label>
+      <input type="text" id="ondertitel" placeholder="Bijv. Aantal meldingen per regio, 2025">
+      <label class="fld" for="bron">Bron</label>
+      <input type="text" id="bron" placeholder="Bijv. Provincie Overijssel">
+    </div>
+
+    <div class="card">
+      <h2><span class="step">3</span> Kies een grafiek</h2>
+      <div class="types" id="types"></div>
+      <button class="btn primary big" id="btnGen">Genereren ▸</button>
+    </div>
+
+  </div>
+
+  <!-- ===================== RECHTERKOLOM: PREVIEW + BEWERKEN ===================== -->
+  <div class="col-right">
+
+    <div class="card">
+      <h2>Voorbeeld</h2>
+      <div class="previewwrap">
+        <div id="empty" class="empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="7"/><rect x="12" y="7" width="3" height="11"/><rect x="17" y="13" width="3" height="5"/></svg>
+          <div>Vul data in en klik op <b>Genereren</b>.</div>
+        </div>
+        <canvas id="preview" class="hidden" width="1920" height="1080"></canvas>
+      </div>
+      <div id="downloadbar" class="hidden" style="margin-top:12px">
+        <div class="lbl" style="font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:4px">Formaat</div>
+        <div class="sizes" id="sizes"></div>
+        <div class="btnrow" style="margin-top:10px">
+          <button class="btn primary" id="btnPng" style="flex:1">⬇ Download PNG</button>
+          <button class="btn" id="btnCopy">📋 Kopieer</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="editcard">
+      <h2>Data aanpassen</h2>
+      <p class="hint" style="margin-top:0">Dit zijn de verwerkte cijfers. Pas ze aan en klik op <b>Grafiek bijwerken</b>.</p>
+      <div style="overflow-x:auto"><table class="data" id="datatable"></table></div>
+      <div class="btnrow" style="margin-top:10px">
+        <button class="btn" id="btnAddRow">+ Rij</button>
+        <button class="btn" id="btnAddSeries">+ Reeks</button>
+        <button class="btn primary" id="btnUpdate" style="margin-left:auto">Grafiek bijwerken</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="colorcard">
+      <h2>Kleuren (huisstijl)</h2>
+      <div class="colgrp">
+        <div class="lbl">Achtergrond</div>
+        <div class="swatchrow" id="bgSwatches"></div>
+      </div>
+      <div class="colgrp">
+        <div class="lbl">Tekstkleur</div>
+        <div class="swatchrow" id="textSwatches"></div>
+      </div>
+      <div class="colgrp" id="seriesColorGrp">
+        <div class="lbl">Kleur per reeks</div>
+        <div id="seriesColors"></div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="showValues" checked> Waarden tonen in de grafiek</label>
+    </div>
+
+  </div>
+</div>
+
+<div style="max-width:1600px;margin:0 auto;padding:0 20px 30px">
+  <details class="tips">
+    <summary>Tips &amp; huisstijl instellen</summary>
+    <div class="note">
+      <b>Exacte huisstijlkleuren instellen:</b> bovenaan de code (het blok <code>HUISSTIJL</code>) staan de kleuren.
+      Vervang de hex-codes door de exacte waarden uit de RTV Oost-huisstijl. Het lettertype <b>Roobert</b> wordt
+      gebruikt als het op de computer is geïnstalleerd; anders valt hij netjes terug op een systeemletter.
+    </div>
+  </details>
+</div>
+
+<script>
+/* ============================================================================
+   1. HUISSTIJL  —  pas hier de EXACTE RTV Oost-kleuren aan.
+   De secundaire reekskleuren zijn kleurenblind-veilig getoetst (dataviz-skill).
+   ========================================================================== */
+const HUISSTIJL = {
+  fontFamily: "Roobert, Inter, 'Helvetica Neue', Arial, sans-serif",
+  logoTekst: "Oost",
+
+  // Genoemde merkkleuren — deze verschijnen in de kleurkiezers.
+  palet: [
+    { naam:"Oost-blauw",   hex:"#0b5fd6" },
+    { naam:"Donkerblauw",  hex:"#0d366b" },
+    { naam:"Aqua",         hex:"#1baf7a" },
+    { naam:"Geel",         hex:"#eda100" },
+    { naam:"Groen",        hex:"#008300" },
+    { naam:"Paars",        hex:"#4a3aa7" },
+    { naam:"Rood",         hex:"#e34948" },
+    { naam:"Roze",         hex:"#e87ba4" },
+    { naam:"Oranje",       hex:"#eb6834" },
+  ],
+  // Volgorde waarin reeksen standaard gekleurd worden (vaste volgorde, niet cyclisch).
+  reeksVolgorde: ["#0b5fd6","#1baf7a","#eda100","#008300","#4a3aa7","#e34948","#e87ba4","#eb6834"],
+
+  achtergronden: [
+    { naam:"Wit",         hex:"#ffffff" },
+    { naam:"Lichtgrijs",  hex:"#f5f7fb" },
+    { naam:"Oost-blauw",  hex:"#0b5fd6" },
+    { naam:"Donkerblauw", hex:"#0d366b" },
+  ],
+  teksten: [
+    { naam:"Donker", hex:"#0b1b33" },
+    { naam:"Wit",    hex:"#ffffff" },
+    { naam:"Blauw",  hex:"#0b5fd6" },
+  ],
+};
+
+/* ============================================================================
+   2. GRAFIEKTYPES
+   ========================================================================== */
+const CHARTS = [
+  { id:"kolom",     naam:"Kolommen",        icon:iconKolom },
+  { id:"staaf",     naam:"Balken",          icon:iconStaaf },
+  { id:"gestapeld", naam:"Gestapeld",       icon:iconGestapeld },
+  { id:"lijn",      naam:"Lijn",            icon:iconLijn },
+  { id:"vlak",      naam:"Vlak",            icon:iconVlak },
+  { id:"taart",     naam:"Taart",           icon:iconTaart },
+  { id:"donut",     naam:"Donut",           icon:iconDonut },
+  { id:"lollipop",  naam:"Rangschikking",   icon:iconLolli },
+  { id:"kpi",       naam:"Groot getal",     icon:iconKpi },
+];
+
+/* ============================================================================
+   3. STATE
+   ========================================================================== */
+const state = {
+  type: "kolom",
+  data: { labels:[], series:[] },   // series: [{naam, waarden:[]}]
+  formaat: { w:1920, h:1080, id:"web" },
+  kleuren: {
+    achtergrond: "#ffffff",
+    tekst: "#0b1b33",
+    reeks: HUISSTIJL.reeksVolgorde.slice(),
+  },
+  toonWaarden: true,
+  gegenereerd: false,
+};
+
+const FORMATEN = [
+  { id:"web",   naam:"Liggend 16:9", w:1920, h:1080 },
+  { id:"vierk", naam:"Vierkant",     w:1080, h:1080 },
+  { id:"story", naam:"Verticaal",    w:1080, h:1920 },
+];
+
+/* ============================================================================
+   4. GETALLEN (Nederlands)
+   ========================================================================== */
+function parseNum(raw){
+  if(raw==null) return NaN;
+  let s = String(raw).trim().replace(/ /g,"").replace(/[%€$\s]/g,"");
+  if(!s) return NaN;
+  const neg = /^-/.test(s); s = s.replace(/^-/,"");
+  const hasComma = s.includes(","), hasDot = s.includes(".");
+  if(hasComma && hasDot){
+    // laatste scheidingsteken is de decimaal
+    if(s.lastIndexOf(",") > s.lastIndexOf(".")) s = s.replace(/\./g,"").replace(",",".");
+    else s = s.replace(/,/g,"");
+  } else if(hasComma){
+    s = s.replace(",",".");                    // 35,6 -> 35.6
+  } else if(hasDot){
+    const p = s.split(".");
+    if(p.length>2 || (p.length===2 && p[1].length===3)) s = s.replace(/\./g,""); // 1.200 / 1.200.000 -> duizendtal
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? NaN : (neg ? -n : n);
+}
+function fmtNum(n){
+  if(n==null || isNaN(n)) return "";
+  const abs = Math.abs(n);
+  let d = 0;
+  if(abs>0 && abs<1) d = 2; else if(abs<10 && !Number.isInteger(n)) d = 1;
+  return n.toLocaleString("nl-NL",{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+
+/* ============================================================================
+   5. INVOER PARSEN  (tabel-modus + paren-modus)
+   ========================================================================== */
+function detectDelim(text){
+  if(text.includes("\t")) return "\t";
+  if(text.includes(";"))  return ";";
+  return null; // komma is riskant (decimaalteken) -> alleen als tabel expliciet
+}
+function splitCells(line, delim){
+  return line.split(delim).map(c=>c.trim());
+}
+function parseInput(text){
+  const lines = text.replace(/\r/g,"").split("\n").map(l=>l.trim()).filter(l=>l.length);
+  if(!lines.length) return { labels:[], series:[] };
+
+  const delim = detectDelim(text);
+
+  // ---- TABEL-MODUS: tab of puntkomma aanwezig -> raster met meerdere reeksen ----
+  if(delim){
+    let rows = lines.map(l=>splitCells(l, delim));
+    const ncols = Math.max(...rows.map(r=>r.length));
+    rows = rows.map(r=>{ while(r.length<ncols) r.push(""); return r; });
+
+    if(ncols===1) return pairsMode(lines);
+
+    // koprij? kolommen 2..n van rij 0 zijn niet-numeriek
+    const headerLike = rows[0].slice(1).some(c=>c!=="" && isNaN(parseNum(c))) &&
+                       rows[0].slice(1).every(c=> isNaN(parseNum(c)));
+    const header = (headerLike && rows.length>1) ? rows[0] : null;
+    const body = header ? rows.slice(1) : rows;
+
+    const labels = body.map(r=>r[0] || "");
+    const series = [];
+    for(let j=1;j<ncols;j++){
+      series.push({
+        naam: header ? (header[j] || ("Reeks "+j)) : (ncols>2 ? "Reeks "+j : "Waarde"),
+        waarden: body.map(r=> { const v=parseNum(r[j]); return isNaN(v)?0:v; }),
+      });
+    }
+    return { labels, series };
+  }
+
+  // ---- PAREN-MODUS: "label: waarde", "label waarde", "label = waarde" ----
+  return pairsMode(lines);
+}
+function pairsMode(lines){
+  const labels=[], vals=[];
+  for(const line of lines){
+    // splits op laatste :=  of op laatste getal-token
+    let m = line.match(/^(.*?)[\s:=–-]+(-?[\d.,]+)\s*%?$/);
+    if(!m){ m = line.match(/^(.*?)(-?[\d.,]+)\s*%?$/); }
+    if(m){
+      const lab = m[1].replace(/[:=–\-\s]+$/,"").trim();
+      const v = parseNum(m[2]);
+      if(!isNaN(v)){ labels.push(lab || ("Waarde "+(labels.length+1))); vals.push(v); continue; }
+    }
+    // regel zonder getal -> label met 0
+    labels.push(line); vals.push(0);
+  }
+  return { labels, series:[{ naam:"Waarde", waarden:vals }] };
+}
+
+/* ---- Cijfers uit vrije tekst halen (hulpje, redacteur controleert) ---- */
+const TEKST_STOP = new Set(["de","het","een","van","in","op","met","en","of","is","zijn","was","waren","procent","dat","die","er","aan","voor","bij","tot","naar","al","ook","meer","dan","om","te","uit","kwam","bleef","steken","stemde","werd","heeft","had"]);
+function extractFromText(text){
+  const clean = text.replace(/\s+/g," ").trim();
+  const numRe = /-?\d[\d.,]*\s*(?:%|procent|euro|€)?/gi;
+  const labels=[], vals=[]; const seen=new Set(); let m;
+  while((m = numRe.exec(clean))){
+    const v = parseNum(m[0]); if(isNaN(v)) continue;
+    const before = clean.slice(0, m.index).trim().split(/\s+/).filter(Boolean).slice(-6);
+    // zoek dichtstbijzijnde eigennaam (hoofdletter) als label
+    let capIdx=-1;
+    for(let k=before.length-1;k>=0;k--){ if(/^[A-ZÀ-Þ]/.test(before[k])){ capIdx=k; break; } }
+    let label;
+    if(capIdx>=0){
+      let start=capIdx;
+      while(start>0 && /^[A-ZÀ-Þ]/.test(before[start-1]) && !TEKST_STOP.has(before[start-1].toLowerCase())) start--;
+      label = before.slice(start,capIdx+1).join(" ");
+    } else {
+      label = before.filter(w=>!TEKST_STOP.has(w.toLowerCase())).slice(-3).join(" ");
+    }
+    label = (label||("Waarde "+(labels.length+1))).replace(/[^\wÀ-þ %-]/g,"").replace(/\s+/g," ").trim();
+    if(!label) label = "Waarde "+(labels.length+1);
+    const key = label.toLowerCase();
+    if(seen.has(key)) continue; seen.add(key);
+    labels.push(label); vals.push(v);
+  }
+  return { labels, series:[{ naam:"Waarde", waarden:vals }] };
+}
+
+/* ============================================================================
+   6. CHART ENGINE  (canvas)
+   ========================================================================== */
+function relLum(hex){
+  const c = hex.replace("#",""); const n = c.length===3 ? c.split("").map(x=>x+x).join("") : c;
+  const r=parseInt(n.slice(0,2),16)/255, g=parseInt(n.slice(2,4),16)/255, b=parseInt(n.slice(4,6),16)/255;
+  const f=x=>x<=.03928? x/12.92 : Math.pow((x+.055)/1.055,2.4);
+  return .2126*f(r)+.7152*f(g)+.0722*f(b);
+}
+function isDark(hex){ return relLum(hex) < 0.4; }
+function withAlpha(hex,a){
+  const c=hex.replace("#",""); const n=c.length===3?c.split("").map(x=>x+x).join(""):c;
+  return `rgba(${parseInt(n.slice(0,2),16)},${parseInt(n.slice(2,4),16)},${parseInt(n.slice(4,6),16)},${a})`;
+}
+// kleur voor de i-e reeks (staaf/lijn) of het i-e segment (taart/donut).
+// Valt terug op de huisstijlvolgorde als er meer categorieën dan ingestelde kleuren zijn.
+function catColor(i){ return state.kleuren.reeks[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]; }
+function niceScale(min,max,ticks){
+  if(min===max){ max = min+1; }
+  const range = niceNum(max-min,false);
+  const step  = niceNum(range/(ticks-1),true);
+  const nmin  = Math.floor(min/step)*step;
+  const nmax  = Math.ceil(max/step)*step;
+  const out=[]; for(let v=nmin; v<=nmax+step/2; v+=step) out.push(Math.round(v/step)*step);
+  return { min:nmin, max:nmax, step, ticks:out };
+}
+function niceNum(x,round){
+  if(x<=0) return 1;
+  const exp=Math.floor(Math.log10(x)), frac=x/Math.pow(10,exp); let nf;
+  if(round){ nf = frac<1.5?1 : frac<3?2 : frac<7?5 : 10; }
+  else     { nf = frac<=1?1 : frac<=2?2 : frac<=5?5 : 10; }
+  return nf*Math.pow(10,exp);
+}
+function roundRectTop(ctx,x,y,w,h,r){
+  r=Math.min(r,Math.abs(w)/2,Math.abs(h));
+  ctx.beginPath();
+  ctx.moveTo(x,y+h); ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+  ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r); ctx.lineTo(x+w,y+h); ctx.closePath();
+}
+function roundRectRight(ctx,x,y,w,h,r){
+  r=Math.min(r,Math.abs(h)/2,Math.abs(w));
+  ctx.beginPath();
+  ctx.moveTo(x,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r); ctx.lineTo(x,y+h); ctx.closePath();
+}
+function wrapText(ctx,text,maxW){
+  const words=text.split(" "); const lines=[]; let line="";
+  for(const w of words){
+    const t=line?line+" "+w:w;
+    if(ctx.measureText(t).width>maxW && line){ lines.push(line); line=w; }
+    else line=t;
+  }
+  if(line) lines.push(line); return lines;
+}
+
+function render(){
+  const canvas=document.getElementById("preview");
+  const {w,h}=state.formaat;
+  canvas.width=w; canvas.height=h;
+  const ctx=canvas.getContext("2d");
+
+  const bg=state.kleuren.achtergrond;
+  const ink=state.kleuren.tekst;
+  const darkBg=isDark(bg);
+  const muted = darkBg? "rgba(255,255,255,.62)" : "#8a97a8";
+  const grid  = darkBg? "rgba(255,255,255,.14)" : "#e6e9f0";
+  const axis  = darkBg? "rgba(255,255,255,.35)" : "#c7d0de";
+  const F=HUISSTIJL.fontFamily;
+  const S=h/1080;                       // schaalfactor t.o.v. 1080p
+
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
+
+  // ---- kopregel ----
+  const padX=Math.round(w*0.055), padTop=Math.round(64*S);
+  let y=padTop;
+  ctx.textBaseline="top"; ctx.textAlign="left";
+  const titel=document.getElementById("titel").value.trim();
+  const onder=document.getElementById("ondertitel").value.trim();
+  if(titel){
+    ctx.fillStyle=ink; ctx.font=`800 ${Math.round(58*S)}px ${F}`;
+    const tl=wrapText(ctx,titel,w-padX*2);
+    for(const l of tl.slice(0,2)){ ctx.fillText(l,padX,y); y+=Math.round(66*S); }
+  }
+  if(onder){
+    ctx.fillStyle=darkBg? "rgba(255,255,255,.78)" : "#5b6b82";
+    ctx.font=`500 ${Math.round(31*S)}px ${F}`;
+    const ol=wrapText(ctx,onder,w-padX*2);
+    for(const l of ol.slice(0,2)){ ctx.fillText(l,padX,y); y+=Math.round(40*S); }
+  }
+  const headerBottom=y+Math.round(18*S);
+
+  // ---- voettekst (bron + logo) ----
+  const footY=h-Math.round(70*S);
+  const bron=document.getElementById("bron").value.trim();
+  ctx.font=`500 ${Math.round(25*S)}px ${F}`; ctx.fillStyle=muted; ctx.textBaseline="alphabetic";
+  if(bron) ctx.fillText("Bron: "+bron, padX, footY+Math.round(18*S));
+  drawLogo(ctx, w-padX, footY, S, ink, darkBg);
+  // scheidingslijn boven de voet
+  ctx.strokeStyle=grid; ctx.lineWidth=Math.max(1,1*S);
+  ctx.beginPath(); ctx.moveTo(padX,footY-Math.round(16*S)); ctx.lineTo(w-padX,footY-Math.round(16*S)); ctx.stroke();
+
+  // ---- plotgebied ----
+  const plot={ x:padX, y:headerBottom, w:w-padX*2, h:(footY-Math.round(40*S))-headerBottom };
+
+  const data=state.data;
+  const hasData = data.labels.length && data.series.length && data.series.some(s=>s.waarden.some(v=>v));
+  if(!hasData){
+    ctx.fillStyle=muted; ctx.textAlign="center"; ctx.font=`500 ${Math.round(30*S)}px ${F}`;
+    ctx.fillText("Geen data", w/2, plot.y+plot.h/2); ctx.textAlign="left"; return;
+  }
+
+  // reeks-legenda alleen bij grafiektypes met meerdere reeksen naast elkaar
+  const legendTypes = ["kolom","staaf","gestapeld","lijn","vlak"];
+  const showTopLegend = data.series.length>1 && legendTypes.includes(state.type);
+  const legendH = showTopLegend ? drawLegend(ctx,plot,S,F,ink) : 0;
+  const p2={ ...plot, y:plot.y+legendH, h:plot.h-legendH };
+
+  const ctxColors={ ink, muted, grid, axis, F, S, darkBg };
+  switch(state.type){
+    case "kolom":     drawBars(ctx,p2,data,ctxColors,false); break;
+    case "staaf":     drawBars(ctx,p2,data,ctxColors,true);  break;
+    case "gestapeld": drawStacked(ctx,p2,data,ctxColors);    break;
+    case "lijn":      drawLine(ctx,p2,data,ctxColors,false); break;
+    case "vlak":      drawLine(ctx,p2,data,ctxColors,true);  break;
+    case "taart":     drawPie(ctx,p2,data,ctxColors,0);      break;
+    case "donut":     drawPie(ctx,p2,data,ctxColors,0.58);   break;
+    case "lollipop":  drawLollipop(ctx,p2,data,ctxColors);   break;
+    case "kpi":       drawKpi(ctx,p2,data,ctxColors);        break;
+  }
+}
+
+function drawLogo(ctx,xRight,yBase,S,ink,darkBg){
+  const txt=HUISSTIJL.logoTekst;
+  ctx.font=`800 ${Math.round(34*S)}px ${HUISSTIJL.fontFamily}`;
+  ctx.textAlign="right"; ctx.textBaseline="alphabetic";
+  const w=ctx.measureText(txt).width, padx=Math.round(12*S), pady=Math.round(6*S);
+  const boxW=w+padx*2, boxH=Math.round(46*S);
+  const bx=xRight-boxW, by=yBase-boxH+Math.round(20*S);
+  ctx.fillStyle= darkBg? "#ffffff" : "#0d366b";
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx,by,boxW,boxH,Math.round(8*S)) : ctx.rect(bx,by,boxW,boxH); ctx.fill();
+  ctx.fillStyle= darkBg? "#0d366b" : "#ffffff";
+  ctx.fillText(txt, xRight-padx, by+boxH-pady*2.1);
+  ctx.textAlign="left";
+}
+
+function drawLegend(ctx,plot,S,F,ink){
+  const items=state.data.series.map((s,i)=>({nm:s.naam,c:catColor(i)}));
+  ctx.font=`600 ${Math.round(26*S)}px ${F}`; ctx.textBaseline="middle";
+  let x=plot.x, y=plot.y+Math.round(14*S); const box=Math.round(20*S), gap=Math.round(26*S);
+  for(const it of items){
+    const tw=ctx.measureText(it.nm).width;
+    if(x+box+8*S+tw > plot.x+plot.w){ break; }
+    ctx.fillStyle=it.c;
+    ctx.beginPath(); ctx.roundRect?ctx.roundRect(x,y-box/2,box,box,Math.round(5*S)):ctx.rect(x,y-box/2,box,box); ctx.fill();
+    ctx.fillStyle=ink; ctx.fillText(it.nm, x+box+Math.round(8*S), y);
+    x += box+Math.round(8*S)+tw+gap;
+  }
+  ctx.textBaseline="top";
+  return Math.round(46*S);
+}
+
+function yAxisAndGrid(ctx,plot,sc,C,fmt){
+  const {muted,grid,axis,F,S}=C;
+  ctx.font=`500 ${Math.round(24*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
+  ctx.strokeStyle=grid; ctx.lineWidth=Math.max(1,1*S);
+  for(const t of sc.ticks){
+    const y=plot.y+plot.h-((t-sc.min)/(sc.max-sc.min))*plot.h;
+    ctx.beginPath(); ctx.moveTo(plot.x,y); ctx.lineTo(plot.x+plot.w,y); ctx.stroke();
+    ctx.fillStyle=muted; ctx.fillText(fmt(t), plot.x-Math.round(12*S), y);
+  }
+  ctx.textAlign="left"; ctx.textBaseline="top";
+}
+function measureYAxis(ctx,sc,C,fmt){
+  ctx.font=`500 ${Math.round(24*C.S)}px ${C.F}`;
+  let mw=0; for(const t of sc.ticks) mw=Math.max(mw,ctx.measureText(fmt(t)).width);
+  return mw+Math.round(20*C.S);
+}
+
+function drawBars(ctx,plot,data,C,horizontal){
+  const {S,F,ink,muted,axis}=C;
+  const ns=data.series.length, nl=data.labels.length;
+  let dmin=0,dmax=0;
+  data.series.forEach(s=>s.waarden.forEach(v=>{ dmax=Math.max(dmax,v); dmin=Math.min(dmin,v); }));
+  const sc=niceScale(dmin,dmax,6);
+
+  if(!horizontal){
+    const axW=measureYAxis(ctx,sc,C,fmtNum);
+    const p={x:plot.x+axW,y:plot.y,w:plot.w-axW,h:plot.h-Math.round(44*S)};
+    yAxisAndGrid(ctx,p,sc,C,fmtNum);
+    const band=p.w/nl, groupW=band*0.72, bw=groupW/ns;
+    const zeroY=p.y+p.h-((0-sc.min)/(sc.max-sc.min))*p.h;
+    for(let i=0;i<nl;i++){
+      const gx=p.x+band*i+(band-groupW)/2;
+      for(let j=0;j<ns;j++){
+        const v=data.series[j].waarden[i]||0;
+        const vy=p.y+p.h-((v-sc.min)/(sc.max-sc.min))*p.h;
+        const x=gx+bw*j+ (ns>1?1*S:0), bwe=bw-(ns>1?2*S:0);
+        ctx.fillStyle=catColor(j);
+        const top=Math.min(vy,zeroY), hgt=Math.abs(vy-zeroY);
+        drawRR(ctx,x,top,bwe,hgt,Math.round(5*S), v>=0?"top":"bottom");
+        if(state.toonWaarden && (ns*nl)<=28){
+          ctx.fillStyle=ink; ctx.font=`700 ${Math.round(23*S)}px ${F}`;
+          ctx.textAlign="center"; ctx.textBaseline="bottom";
+          ctx.fillText(fmtNum(v), x+bwe/2, top-Math.round(6*S)); ctx.textBaseline="top";
+        }
+      }
+      ctx.fillStyle=muted; ctx.font=`600 ${Math.round(24*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
+      const lbl=data.labels[i]||"";
+      ctx.fillText(fitLabel(ctx,lbl,band-6*S), p.x+band*i+band/2, p.y+p.h+Math.round(12*S));
+    }
+    ctx.strokeStyle=axis; ctx.lineWidth=Math.max(1.5,1.5*S);
+    ctx.beginPath(); ctx.moveTo(p.x,zeroY); ctx.lineTo(p.x+p.w,zeroY); ctx.stroke();
+    ctx.textAlign="left";
+  } else {
+    // horizontaal: labels links
+    ctx.font=`600 ${Math.round(25*S)}px ${F}`;
+    let lw=0; data.labels.forEach(l=>lw=Math.max(lw,ctx.measureText(l).width)); lw=Math.min(lw+20*S, plot.w*0.32);
+    const p={x:plot.x+lw,y:plot.y,w:plot.w-lw,h:plot.h};
+    const scx=niceScale(dmin,dmax,6);
+    // verticale rasterlijnen
+    ctx.strokeStyle=C.grid; ctx.lineWidth=Math.max(1,1*S); ctx.font=`500 ${Math.round(23*S)}px ${F}`;
+    ctx.textBaseline="top"; ctx.textAlign="center";
+    for(const t of scx.ticks){
+      const x=p.x+((t-scx.min)/(scx.max-scx.min))*p.w;
+      ctx.beginPath(); ctx.moveTo(x,p.y); ctx.lineTo(x,p.y+p.h); ctx.stroke();
+      ctx.fillStyle=muted; ctx.fillText(fmtNum(t),x,p.y+p.h+Math.round(8*S));
+    }
+    const band=p.h/nl, groupH=band*0.72, bh=groupH/ns;
+    const zeroX=p.x+((0-scx.min)/(scx.max-scx.min))*p.w;
+    for(let i=0;i<nl;i++){
+      const gy=p.y+band*i+(band-groupH)/2;
+      for(let j=0;j<ns;j++){
+        const v=data.series[j].waarden[i]||0;
+        const vx=p.x+((v-scx.min)/(scx.max-scx.min))*p.w;
+        const y=gy+bh*j+(ns>1?1*S:0), bhe=bh-(ns>1?2*S:0);
+        ctx.fillStyle=catColor(j);
+        const left=Math.min(vx,zeroX), wid=Math.abs(vx-zeroX);
+        drawRR(ctx,left,y,wid,bhe,Math.round(5*S), v>=0?"right":"left");
+        if(state.toonWaarden){
+          ctx.fillStyle=ink; ctx.font=`700 ${Math.round(23*S)}px ${F}`;
+          ctx.textAlign="left"; ctx.textBaseline="middle";
+          ctx.fillText(fmtNum(v), Math.max(vx,zeroX)+Math.round(8*S), y+bhe/2);
+        }
+      }
+      ctx.fillStyle=ink; ctx.font=`600 ${Math.round(25*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
+      ctx.fillText(fitLabel(ctx,data.labels[i]||"",lw-10*S), plot.x+lw-Math.round(12*S), gy+groupH/2);
+    }
+    ctx.textAlign="left"; ctx.textBaseline="top";
+  }
+}
+function drawRR(ctx,x,y,w,h,r,side){
+  ctx.beginPath();
+  if(w<=0||h<=0){ ctx.rect(x,y,Math.max(w,1),Math.max(h,1)); ctx.fill(); return; }
+  if(ctx.roundRect){
+    let rad;
+    if(side==="top")         rad=[r,r,0,0];
+    else if(side==="bottom") rad=[0,0,r,r];
+    else if(side==="right")  rad=[0,r,r,0];
+    else if(side==="left")   rad=[r,0,0,r];
+    else                     rad=[0,0,0,0];   // vlak (bv. tussensegment gestapeld)
+    ctx.roundRect(x,y,w,h,rad);
+  } else ctx.rect(x,y,w,h);
+  ctx.fill();
+}
+function fitLabel(ctx,txt,maxW){
+  if(ctx.measureText(txt).width<=maxW) return txt;
+  let t=txt;
+  while(t.length>1 && ctx.measureText(t+"…").width>maxW) t=t.slice(0,-1);
+  return t+"…";
+}
+
+function drawStacked(ctx,plot,data,C){
+  const {S,F,ink,muted,axis}=C;
+  const nl=data.labels.length, ns=data.series.length;
+  const totals=data.labels.map((_,i)=>data.series.reduce((a,s)=>a+Math.max(0,s.waarden[i]||0),0));
+  const sc=niceScale(0,Math.max(...totals,1),6);
+  const axW=measureYAxis(ctx,sc,C,fmtNum);
+  const p={x:plot.x+axW,y:plot.y,w:plot.w-axW,h:plot.h-Math.round(44*S)};
+  yAxisAndGrid(ctx,p,sc,C,fmtNum);
+  const band=p.w/nl, bw=band*0.6;
+  for(let i=0;i<nl;i++){
+    let acc=0; const x=p.x+band*i+(band-bw)/2;
+    for(let j=0;j<ns;j++){
+      const v=Math.max(0,data.series[j].waarden[i]||0);
+      const y0=p.y+p.h-((acc-sc.min)/(sc.max-sc.min))*p.h;
+      const y1=p.y+p.h-((acc+v-sc.min)/(sc.max-sc.min))*p.h;
+      ctx.fillStyle=catColor(j);
+      const gap=(j<ns-1)?2*S:0;
+      const top=(j===ns-1)?"top":"none";
+      drawRR(ctx,x,y1,bw,(y0-y1)-gap, Math.round(5*S), top==="top"?"top":"flat");
+      acc+=v;
+    }
+    ctx.fillStyle=muted; ctx.font=`600 ${Math.round(24*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
+    ctx.fillText(fitLabel(ctx,data.labels[i]||"",band-6*S), p.x+band*i+band/2, p.y+p.h+Math.round(12*S));
+  }
+  ctx.strokeStyle=axis; ctx.lineWidth=Math.max(1.5,1.5*S);
+  ctx.beginPath(); ctx.moveTo(p.x,p.y+p.h); ctx.lineTo(p.x+p.w,p.y+p.h); ctx.stroke();
+  ctx.textAlign="left";
+}
+
+function drawLine(ctx,plot,data,C,area){
+  const {S,F,ink,muted,axis}=C;
+  const nl=data.labels.length, ns=data.series.length;
+  let dmin=0,dmax=0;
+  data.series.forEach(s=>s.waarden.forEach(v=>{ dmax=Math.max(dmax,v); dmin=Math.min(dmin,v); }));
+  const sc=niceScale(dmin,dmax,6);
+  const axW=measureYAxis(ctx,sc,C,fmtNum);
+  const p={x:plot.x+axW,y:plot.y,w:plot.w-axW,h:plot.h-Math.round(44*S)};
+  yAxisAndGrid(ctx,p,sc,C,fmtNum);
+  const step= nl>1 ? p.w/(nl-1) : 0;
+  const X=i=> nl>1 ? p.x+step*i : p.x+p.w/2;
+  const Y=v=> p.y+p.h-((v-sc.min)/(sc.max-sc.min))*p.h;
+  for(let j=0;j<ns;j++){
+    const col=catColor(j);
+    const pts=data.series[j].waarden.map((v,i)=>[X(i),Y(v||0)]);
+    if(area && ns<=2){
+      ctx.beginPath(); ctx.moveTo(pts[0][0],Y(Math.max(0,sc.min)));
+      pts.forEach(pt=>ctx.lineTo(pt[0],pt[1]));
+      ctx.lineTo(pts[pts.length-1][0],Y(Math.max(0,sc.min)));
+      ctx.closePath(); ctx.fillStyle=withAlpha(col,.16); ctx.fill();
+    }
+    ctx.strokeStyle=col; ctx.lineWidth=Math.max(2,3*S); ctx.lineJoin="round"; ctx.lineCap="round";
+    ctx.beginPath(); pts.forEach((pt,i)=> i?ctx.lineTo(pt[0],pt[1]):ctx.moveTo(pt[0],pt[1])); ctx.stroke();
+    // markers + waarde-labels
+    pts.forEach((pt,i)=>{
+      ctx.fillStyle=state.kleuren.achtergrond; ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(5,6*S),0,7); ctx.fill();
+      ctx.fillStyle=col; ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(3.5,4.5*S),0,7); ctx.fill();
+      if(state.toonWaarden && ns<=2 && nl<=14){
+        const above = j%2===0;                      // reeksen wijken boven/onder uit -> geen overlap
+        ctx.fillStyle=ink; ctx.font=`700 ${Math.round(22*S)}px ${F}`; ctx.textAlign="center";
+        ctx.textBaseline= above?"bottom":"top";
+        ctx.fillText(fmtNum(data.series[j].waarden[i]||0), pt[0], pt[1]+(above?-Math.round(12*S):Math.round(12*S)));
+        ctx.textBaseline="top";
+      }
+    });
+  }
+  // x-labels
+  ctx.fillStyle=muted; ctx.font=`600 ${Math.round(24*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
+  const every=Math.ceil(nl/12);
+  data.labels.forEach((l,i)=>{ if(i%every===0) ctx.fillText(fitLabel(ctx,l,step*1.4||120), X(i), p.y+p.h+Math.round(12*S)); });
+  ctx.strokeStyle=axis; ctx.lineWidth=Math.max(1.5,1.5*S);
+  ctx.beginPath(); ctx.moveTo(p.x,p.y+p.h); ctx.lineTo(p.x+p.w,p.y+p.h); ctx.stroke();
+  ctx.textAlign="left";
+}
+
+function drawPie(ctx,plot,data,C,innerRatio){
+  const {S,F,ink,muted,darkBg}=C;
+  const s=data.series[0];
+  const items=data.labels.map((l,i)=>({l, v:Math.max(0,s.waarden[i]||0), c:catColor(i)}))
+                         .filter(it=>it.v>0);
+  const total=items.reduce((a,it)=>a+it.v,0)||1;
+  const cx=plot.x+plot.w*0.34, cy=plot.y+plot.h/2, R=Math.min(plot.w*0.30,plot.h*0.42);
+  let a=-Math.PI/2;
+  items.forEach(it=>{
+    const ang=it.v/total*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,R,a,a+ang); ctx.closePath();
+    ctx.fillStyle=it.c; ctx.fill();
+    ctx.strokeStyle=state.kleuren.achtergrond; ctx.lineWidth=Math.max(2,3*S); ctx.stroke();
+    // percentage-label
+    if(ang>0.28){
+      const mid=a+ang/2, lr=innerRatio>0? R*(1+innerRatio)/2 : R*0.62;
+      ctx.fillStyle= innerRatio>0? ink : "#ffffff";
+      ctx.font=`800 ${Math.round(26*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText(Math.round(it.v/total*100)+"%", cx+Math.cos(mid)*lr, cy+Math.sin(mid)*lr);
+    }
+    a+=ang;
+  });
+  if(innerRatio>0){
+    ctx.fillStyle=state.kleuren.achtergrond; ctx.beginPath(); ctx.arc(cx,cy,R*innerRatio,0,7); ctx.fill();
+    ctx.fillStyle=ink; ctx.textAlign="center";
+    ctx.font=`800 ${Math.round(46*S)}px ${F}`; ctx.textBaseline="alphabetic";
+    ctx.fillText(fmtNum(total), cx, cy+Math.round(6*S));
+    ctx.fillStyle=muted; ctx.font=`600 ${Math.round(22*S)}px ${F}`; ctx.textBaseline="top";
+    ctx.fillText("totaal", cx, cy+Math.round(14*S));
+  }
+  // legenda rechts
+  ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.font=`600 ${Math.round(27*S)}px ${F}`;
+  const lx=plot.x+plot.w*0.66; let ly=cy-(items.length*Math.round(46*S))/2+Math.round(20*S);
+  items.forEach(it=>{
+    ctx.fillStyle=it.c; const b=Math.round(24*S);
+    ctx.beginPath(); ctx.roundRect?ctx.roundRect(lx,ly-b/2,b,b,Math.round(6*S)):ctx.rect(lx,ly-b/2,b,b); ctx.fill();
+    ctx.fillStyle=ink;
+    ctx.fillText(fitLabel(ctx,`${it.l}`,plot.w*0.30)+"  ", lx+b+Math.round(12*S), ly);
+    const tw=ctx.measureText(it.l).width;
+    ctx.fillStyle=muted; ctx.fillText(fmtNum(it.v)+" · "+Math.round(it.v/total*100)+"%", lx+b+Math.round(12*S)+tw+Math.round(16*S), ly);
+    ly+=Math.round(46*S);
+  });
+  ctx.textBaseline="top";
+}
+
+function drawLollipop(ctx,plot,data,C){
+  const {S,F,ink,muted,grid}=C;
+  const s=data.series[0];
+  const items=data.labels.map((l,i)=>({l,v:s.waarden[i]||0})).sort((a,b)=>b.v-a.v);
+  const dmax=Math.max(...items.map(it=>it.v),1), dmin=Math.min(0,...items.map(it=>it.v));
+  const sc=niceScale(dmin,dmax,6);
+  ctx.font=`600 ${Math.round(26*S)}px ${F}`;
+  let lw=0; items.forEach(it=>lw=Math.max(lw,ctx.measureText(it.l).width)); lw=Math.min(lw+20*S,plot.w*0.34);
+  const p={x:plot.x+lw,y:plot.y,w:plot.w-lw,h:plot.h-Math.round(20*S)};
+  const zeroX=p.x+((0-sc.min)/(sc.max-sc.min))*p.w;
+  ctx.strokeStyle=grid; ctx.lineWidth=Math.max(1,1*S); ctx.font=`500 ${Math.round(23*S)}px ${F}`;
+  ctx.textAlign="center"; ctx.textBaseline="top";
+  for(const t of sc.ticks){ const x=p.x+((t-sc.min)/(sc.max-sc.min))*p.w;
+    ctx.beginPath(); ctx.moveTo(x,p.y); ctx.lineTo(x,p.y+p.h); ctx.stroke();
+    ctx.fillStyle=muted; ctx.fillText(fmtNum(t),x,p.y+p.h+Math.round(8*S)); }
+  const band=p.h/items.length, col=catColor(0);
+  items.forEach((it,i)=>{
+    const cy=p.y+band*i+band/2, vx=p.x+((it.v-sc.min)/(sc.max-sc.min))*p.w;
+    ctx.strokeStyle=col; ctx.lineWidth=Math.max(2,3*S); ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(zeroX,cy); ctx.lineTo(vx,cy); ctx.stroke();
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(vx,cy,Math.max(6,9*S),0,7); ctx.fill();
+    ctx.fillStyle=ink; ctx.font=`600 ${Math.round(26*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
+    ctx.fillText(fitLabel(ctx,it.l,lw-10*S), plot.x+lw-Math.round(14*S), cy);
+    if(state.toonWaarden){ ctx.textAlign="left"; ctx.font=`700 ${Math.round(24*S)}px ${F}`;
+      ctx.fillText(fmtNum(it.v), vx+Math.round(16*S), cy); }
+  });
+  ctx.textAlign="left"; ctx.textBaseline="top";
+}
+
+function drawKpi(ctx,plot,data,C){
+  const {S,F,ink,muted}=C;
+  const s=data.series[0];
+  const v=s.waarden.find(x=>x)|| s.waarden[0] || 0;
+  const label=data.labels[0]||s.naam||"";
+  ctx.textAlign="center";
+  ctx.fillStyle=catColor(0); ctx.font=`800 ${Math.round(220*S)}px ${F}`; ctx.textBaseline="alphabetic";
+  ctx.fillText(fmtNum(v), plot.x+plot.w/2, plot.y+plot.h*0.56);
+  ctx.fillStyle=ink; ctx.font=`600 ${Math.round(40*S)}px ${F}`; ctx.textBaseline="top";
+  ctx.fillText(fitLabel(ctx,label,plot.w*0.9), plot.x+plot.w/2, plot.y+plot.h*0.6);
+  ctx.textAlign="left";
+}
+
+/* ============================================================================
+   7. UI-KOPPELING
+   ========================================================================== */
+const $=id=>document.getElementById(id);
+
+function buildTypePicker(){
+  const box=$("types"); box.innerHTML="";
+  CHARTS.forEach(c=>{
+    const el=document.createElement("div");
+    el.className="type"+(state.type===c.id?" on":"");
+    el.innerHTML=`${c.icon()}<span>${c.naam}</span>`;
+    el.onclick=()=>{ state.type=c.id; buildTypePicker(); if(state.gegenereerd) render(); };
+    box.appendChild(el);
+  });
+}
+
+function buildDataTable(){
+  const t=$("datatable"); const d=state.data; t.innerHTML="";
+  const thead=document.createElement("tr");
+  thead.innerHTML=`<th>Label</th>`+d.series.map((s,j)=>`<th><input data-s="${j}" class="snaam" value="${escapeAttr(s.naam)}"></th>`).join("")+`<th></th>`;
+  t.appendChild(thead);
+  d.labels.forEach((lab,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><input data-l="${i}" value="${escapeAttr(lab)}"></td>`+
+      d.series.map((s,j)=>`<td class="num"><input data-r="${i}" data-c="${j}" value="${s.waarden[i]??""}"></td>`).join("")+
+      `<td class="del"><button class="icon-btn" data-del="${i}">✕</button></td>`;
+    t.appendChild(tr);
+  });
+  t.querySelectorAll("input").forEach(inp=>inp.oninput=onTableEdit);
+  t.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.del;
+    state.data.labels.splice(i,1); state.data.series.forEach(s=>s.waarden.splice(i,1));
+    buildDataTable(); render(); });
+}
+function onTableEdit(e){
+  const el=e.target, d=state.data;
+  if(el.dataset.l!=null) d.labels[+el.dataset.l]=el.value;
+  else if(el.dataset.s!=null) d.series[+el.dataset.s].naam=el.value;
+  else if(el.dataset.r!=null){ const v=parseNum(el.value); d.series[+el.dataset.c].waarden[+el.dataset.r]= isNaN(v)?0:v; }
+}
+function escapeAttr(s){ return String(s).replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+
+function buildColorControls(){
+  // achtergrond
+  const bg=$("bgSwatches"); bg.innerHTML="";
+  HUISSTIJL.achtergronden.forEach(c=>bg.appendChild(swatch(c.hex,c.naam, state.kleuren.achtergrond===c.hex, ()=>{
+    state.kleuren.achtergrond=c.hex;
+    // automatische leesbare tekstkleur bij donkere achtergrond
+    if(isDark(c.hex) && state.kleuren.tekst==="#0b1b33") state.kleuren.tekst="#ffffff";
+    if(!isDark(c.hex) && state.kleuren.tekst==="#ffffff") state.kleuren.tekst="#0b1b33";
+    buildColorControls(); render();
+  })));
+  // tekst
+  const tx=$("textSwatches"); tx.innerHTML="";
+  HUISSTIJL.teksten.forEach(c=>tx.appendChild(swatch(c.hex,c.naam, state.kleuren.tekst===c.hex, ()=>{
+    state.kleuren.tekst=c.hex; buildColorControls(); render();
+  })));
+  // kleur per reeks / per segment / enkele kleur — afhankelijk van het grafiektype
+  const grp=$("seriesColors"); grp.innerHTML="";
+  const lbl=$("seriesColorGrp").querySelector(".lbl");
+  const byCategory = ["taart","donut"].includes(state.type);
+  const singleColor = ["lollipop","kpi"].includes(state.type);
+  let rows;
+  if(byCategory){ lbl.textContent="Kleur per segment"; rows=state.data.labels.map((l,i)=>({nm:l||("Segment "+(i+1)), idx:i})); }
+  else if(singleColor){ lbl.textContent="Kleur"; rows=[{nm:"Kleur", idx:0}]; }
+  else { lbl.textContent="Kleur per reeks"; rows=state.data.series.map((s,j)=>({nm:s.naam||("Reeks "+(j+1)), idx:j})); }
+  rows.forEach(r=>{
+    const row=document.createElement("div"); row.className="seriescolor";
+    const nm=document.createElement("span"); nm.className="nm"; nm.textContent=r.nm; row.appendChild(nm);
+    const sr=document.createElement("div"); sr.className="swatchrow";
+    const current=catColor(r.idx);
+    HUISSTIJL.palet.forEach(c=>sr.appendChild(swatch(c.hex,c.naam, current===c.hex, ()=>{
+      state.kleuren.reeks[r.idx]=c.hex; buildColorControls(); render();
+    })));
+    row.appendChild(sr); grp.appendChild(row);
+  });
+}
+function swatch(hex,title,on,fn){
+  const s=document.createElement("div"); s.className="swatch"+(on?" on":"");
+  s.style.background=hex; s.dataset.hex=hex; s.title=title; s.onclick=fn; return s;
+}
+
+function buildSizeButtons(){
+  const box=$("sizes"); box.innerHTML="";
+  FORMATEN.forEach(f=>{
+    const b=document.createElement("button");
+    b.className="btn sizebtn"+(state.formaat.id===f.id?" primary":"");
+    b.innerHTML=`${f.naam}<br><small style="opacity:.7">${f.w}×${f.h}</small>`;
+    b.onclick=()=>{ state.formaat={id:f.id,w:f.w,h:f.h}; buildSizeButtons(); render(); };
+    box.appendChild(b);
+  });
+}
+
+function generate(){
+  const raw=$("raw").value;
+  const parsed=parseInput(raw);
+  if(!parsed.labels.length){ alert("Geen data gevonden. Plak cijfers of gebruik ‘Cijfers uit tekst halen’."); return; }
+  state.data=parsed;
+  // reset reekskleuren op huisstijlvolgorde als aantal reeksen wijzigde
+  state.kleuren.reeks = state.data.series.map((_,i)=>HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
+  state.gegenereerd=true;
+  $("empty").classList.add("hidden");
+  $("preview").classList.remove("hidden");
+  $("downloadbar").classList.remove("hidden");
+  $("editcard").classList.remove("hidden");
+  $("colorcard").classList.remove("hidden");
+  buildDataTable(); buildColorControls(); buildSizeButtons();
+  render();
+}
+
+function downloadPng(){
+  const canvas=$("preview");
+  const naam=(($("titel").value.trim()||"grafiek").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""))+"-"+state.formaat.w+"x"+state.formaat.h;
+  canvas.toBlob(blob=>{
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=naam+".png";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  },"image/png");
+}
+async function copyPng(){
+  try{
+    const canvas=$("preview");
+    const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));
+    await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);
+    flash($("btnCopy"),"Gekopieerd ✓");
+  }catch(e){ flash($("btnCopy"),"Niet gelukt"); }
+}
+function flash(btn,txt){ const o=btn.textContent; btn.textContent=txt; setTimeout(()=>btn.textContent=o,1400); }
+
+/* ---- event listeners ---- */
+$("btnGen").onclick=generate;
+$("btnUpdate").onclick=()=>{ buildColorControls(); render(); };
+$("btnPng").onclick=downloadPng;
+$("btnCopy").onclick=copyPng;
+$("showValues").onchange=e=>{ state.toonWaarden=e.target.checked; render(); };
+$("btnAddRow").onclick=()=>{ state.data.labels.push(""); state.data.series.forEach(s=>s.waarden.push(0)); buildDataTable(); };
+$("btnAddSeries").onclick=()=>{ const j=state.data.series.length;
+  state.data.series.push({naam:"Reeks "+(j+1), waarden:state.data.labels.map(()=>0)});
+  state.kleuren.reeks[j]=HUISSTIJL.reeksVolgorde[j%HUISSTIJL.reeksVolgorde.length];
+  buildDataTable(); buildColorControls(); };
+$("btnText").onclick=()=>{ const p=extractFromText($("raw").value);
+  if(!p.labels.length){ alert("Geen cijfers gevonden in de tekst."); return; }
+  state.data=p; state.kleuren.reeks=p.series.map((_,i)=>HUISSTIJL.reeksVolgorde[i]);
+  state.gegenereerd=true;
+  ["empty"].forEach(x=>$(x).classList.add("hidden"));
+  ["preview","downloadbar","editcard","colorcard"].forEach(x=>$(x).classList.remove("hidden"));
+  buildDataTable(); buildColorControls(); buildSizeButtons(); render();
+};
+$("btnFile").onclick=()=>$("file").click();
+$("file").onchange=e=>{ const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=()=>{ $("raw").value=r.result; }; r.readAsText(f,"utf-8"); };
+$("btnSample").onclick=()=>{ $("raw").value="Regio\tMeldingen\nTwente\t352\nIJsselland\t561\nVechtdal\t284\nSalland\t198\nNoordoost\t147";
+  $("titel").value="Meeste meldingen in IJsselland"; $("ondertitel").value="Aantal meldingen per regio, 2025"; $("bron").value="Provincie Overijssel"; };
+
+/* ---- kleine SVG-iconen voor de type-picker ---- */
+function iconKolom(){return `<svg viewBox="0 0 40 34"><g fill="#0b5fd6"><rect x="4" y="18" width="7" height="14" rx="1.5"/><rect x="16" y="8" width="7" height="24" rx="1.5"/><rect x="28" y="22" width="7" height="10" rx="1.5"/></g></svg>`}
+function iconStaaf(){return `<svg viewBox="0 0 40 34"><g fill="#0b5fd6"><rect x="2" y="4" width="24" height="7" rx="1.5"/><rect x="2" y="14" width="34" height="7" rx="1.5"/><rect x="2" y="24" width="16" height="7" rx="1.5"/></g></svg>`}
+function iconGestapeld(){return `<svg viewBox="0 0 40 34"><g><rect x="7" y="16" width="9" height="16" rx="1.5" fill="#0b5fd6"/><rect x="7" y="8" width="9" height="8" rx="1.5" fill="#1baf7a"/><rect x="24" y="12" width="9" height="20" rx="1.5" fill="#0b5fd6"/><rect x="24" y="5" width="9" height="7" rx="1.5" fill="#1baf7a"/></g></svg>`}
+function iconLijn(){return `<svg viewBox="0 0 40 34" fill="none"><polyline points="4,26 14,14 24,20 36,6" stroke="#0b5fd6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="14" r="3" fill="#0b5fd6"/><circle cx="24" cy="20" r="3" fill="#0b5fd6"/></svg>`}
+function iconVlak(){return `<svg viewBox="0 0 40 34"><polygon points="4,28 4,20 14,10 24,16 36,4 36,28" fill="#0b5fd6" opacity=".22"/><polyline points="4,20 14,10 24,16 36,4" stroke="#0b5fd6" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
+function iconTaart(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r="14" fill="#0b5fd6"/><path d="M20 17 L20 3 A14 14 0 0 1 33 21 Z" fill="#1baf7a"/><path d="M20 17 L33 21 A14 14 0 0 1 24 30 Z" fill="#eda100"/></svg>`}
+function iconDonut(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r="14" fill="#0b5fd6"/><path d="M20 17 L20 3 A14 14 0 0 1 33 21 Z" fill="#1baf7a"/><circle cx="20" cy="17" r="6.5" fill="#fff"/></svg>`}
+function iconLolli(){return `<svg viewBox="0 0 40 34"><g stroke="#0b5fd6" stroke-width="2.5"><line x1="4" y1="8" x2="26" y2="8"/><line x1="4" y1="17" x2="34" y2="17"/><line x1="4" y1="26" x2="16" y2="26"/></g><g fill="#0b5fd6"><circle cx="26" cy="8" r="4"/><circle cx="34" cy="17" r="4"/><circle cx="16" cy="26" r="4"/></g></svg>`}
+function iconKpi(){return `<svg viewBox="0 0 40 34"><text x="20" y="24" font-size="22" font-weight="800" text-anchor="middle" fill="#0b5fd6" font-family="Arial">73%</text></svg>`}
+
+/* ---- init ---- */
+buildTypePicker();
+</script>
