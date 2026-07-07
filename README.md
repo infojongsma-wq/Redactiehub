@@ -7,8 +7,6 @@ huisstijl van RTV Oost maakt op basis van data of een stukje tekst, en die als
 Geen installatie, geen account, geen internet nodig. Alles gebeurt in de
 browser; je data verlaat je computer niet.
 
-![voorbeeld](docs/voorbeeld.png)
-
 ---
 
 ## Hoe gebruik je het?

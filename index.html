@@ -407,15 +407,23 @@ function parseInput(text){
 function pairsMode(lines){
   const labels=[], vals=[];
   for(const line of lines){
-    // splits op laatste :=  of op laatste getal-token
-    let m = line.match(/^(.*?)[\s:=–-]+(-?[\d.,]+)\s*%?$/);
-    if(!m){ m = line.match(/^(.*?)(-?[\d.,]+)\s*%?$/); }
-    if(m){
-      const lab = m[1].replace(/[:=–\-\s]+$/,"").trim();
-      const v = parseNum(m[2]);
-      if(!isNaN(v)){ labels.push(lab || ("Waarde "+(labels.length+1))); vals.push(v); continue; }
+    // 1) expliciete scheiding met : of =   (minteken blijft bij het getal)
+    let m = line.match(/^(.*?)\s*[:=]\s*(-?[\d.,]+)\s*%?$/);
+    // 2) label + spatie(s) + getal
+    if(!m) m = line.match(/^(.*\S)\s+(-?[\d.,]+)\s*%?$/);
+    // 3) alleen een getal, zonder label
+    if(!m){
+      const only = line.match(/^(-?[\d.,]+)\s*%?$/);
+      if(only){ const v=parseNum(only[1]); if(!isNaN(v)){ labels.push("Waarde "+(labels.length+1)); vals.push(v); continue; } }
     }
-    // regel zonder getal -> label met 0
+    if(m){
+      const v = parseNum(m[2]);
+      if(!isNaN(v)){
+        const lab = (m[1]||"").replace(/[–-]\s*$/,"").trim();   // losstaand streepje als scheiding weghalen
+        labels.push(lab || ("Waarde "+(labels.length+1))); vals.push(v); continue;
+      }
+    }
+    // regel zonder bruikbaar getal -> label met 0
     labels.push(line); vals.push(0);
   }
   return { labels, series:[{ naam:"Waarde", waarden:vals }] };
