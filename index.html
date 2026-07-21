@@ -116,8 +116,13 @@
                      linear-gradient(45deg,#d7dde5 25%,transparent 25%,transparent 75%,#d7dde5 75%);
     background-size:24px 24px;background-position:0 0,12px 12px;
   }
+  .previewwrap.transp.transp-donker{           /* donker dambord zodat witte tekst zichtbaar blijft in het voorbeeld */
+    background-color:#20242e;
+    background-image:linear-gradient(45deg,#333a49 25%,transparent 25%,transparent 75%,#333a49 75%),
+                     linear-gradient(45deg,#333a49 25%,transparent 25%,transparent 75%,#333a49 75%);
+  }
   #preview{width:100%;height:auto;display:block;border-radius:8px;box-shadow:0 2px 14px rgba(11,27,51,.08)}
-  #preview.fotomode{cursor:grab}
+  #preview.fotomode{cursor:grab;touch-action:none}
   #preview.dragging{cursor:grabbing}
   .swatch.swatch-transparant{
     background-color:#fff;
@@ -344,7 +349,7 @@ const state = {
     reeks: HUISSTIJL.reeksVolgorde.slice(),
   },
   fotoActief: false,
-  foto: { img:null, dx:0, dy:0, zoom:1, contrast:100 },
+  foto: { img:null, panX:0.5, panY:0.5, zoom:1, contrast:100 },   // pan = fractie [0..1], formaat-onafhankelijk
   toonWaarden: true,
   gegenereerd: false,
 };
@@ -580,7 +585,8 @@ function render(){
   if(foto){ drawFotoBg(ctx,w,h); drawFotoScrim(ctx,w,h,darkBg); }   // foto + leesbaarheids-verloop
   else if(!transp){ ctx.fillStyle=bg; ctx.fillRect(0,0,w,h); }      // gewone kleur
   // transparant: canvas blijft doorzichtig (PNG met alpha)
-  const pw=document.querySelector(".previewwrap"); if(pw) pw.classList.toggle("transp", transp);
+  const pw=document.querySelector(".previewwrap");
+  if(pw){ pw.classList.toggle("transp", transp); pw.classList.toggle("transp-donker", transp && darkBg); }
   canvas.classList.toggle("fotomode", foto);
 
   // ---- kopregel ----
@@ -641,14 +647,16 @@ function render(){
   }
 }
 
-/* Foto als achtergrond: cover-fit + slepen (dx/dy), zoom = bijsnijden, contrast-filter. */
+/* Foto als achtergrond: cover-fit + pan (fractie), zoom = bijsnijden, contrast-filter.
+   Pan als fractie [0..1] i.p.v. pixels -> uitsnede blijft behouden bij formaatwissel. */
+const clamp01 = x => Math.max(0, Math.min(1, x));
+function fotoCover(w,h,img){ return Math.max(w/img.naturalWidth, h/img.naturalHeight)*state.foto.zoom; }
 function drawFotoBg(ctx,w,h){
   const f=state.foto, img=f.img;
-  const cover=Math.max(w/img.naturalWidth, h/img.naturalHeight)*f.zoom;
+  if(!img || !(img.naturalWidth>0 && img.naturalHeight>0)) return;   // dimensieloze afbeelding -> niets tekenen
+  const cover=fotoCover(w,h,img);
   const sw=img.naturalWidth*cover, sh=img.naturalHeight*cover;
-  let x=(w-sw)/2+f.dx, y=(h-sh)/2+f.dy;
-  x=Math.min(0, Math.max(w-sw, x));       // foto blijft altijd beelddekkend
-  y=Math.min(0, Math.max(h-sh, y));
+  const x=(w-sw)*f.panX, y=(h-sh)*f.panY;   // panX/panY in [0..1] -> altijd binnen bereik, altijd beelddekkend
   ctx.save();
   ctx.filter=`contrast(${f.contrast}%)`;
   ctx.drawImage(img, x, y, sw, sh);
@@ -1145,7 +1153,8 @@ $("btnAddSeries").onclick=()=>{ const j=state.data.series.length;
   buildDataTable(); buildColorControls(); };
 $("btnText").onclick=()=>{ const p=extractFromText($("raw").value);
   if(!p.labels.length){ alert("Geen cijfers gevonden in de tekst."); return; }
-  state.data=p; state.kleuren.reeks=p.series.map((_,i)=>HUISSTIJL.reeksVolgorde[i]);
+  const vorige=state.kleuren.reeks||[]; state.data=p;
+  state.kleuren.reeks=p.series.map((_,i)=> vorige[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
   state.gegenereerd=true;
   ["empty"].forEach(x=>$(x).classList.add("hidden"));
   ["preview","downloadbar","editcard","colorcard"].forEach(x=>$(x).classList.remove("hidden"));
@@ -1157,32 +1166,39 @@ $("file").onchange=e=>{ const f=e.target.files[0]; if(!f) return;
 
 /* ---- foto als achtergrond ---- */
 $("fotoFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return;
-  const im=new Image();
+  const url=URL.createObjectURL(f); const im=new Image();
   im.onload=()=>{
-    state.foto={ img:im, dx:0, dy:0, zoom:1, contrast:100 };
+    URL.revokeObjectURL(url);                                    // blob vrijgeven (afbeelding is al gedecodeerd)
+    if(!(im.naturalWidth>0 && im.naturalHeight>0)){ alert("Kon de afmetingen van deze afbeelding niet bepalen. Gebruik een JPG of PNG."); return; }
+    state.foto={ img:im, panX:0.5, panY:0.5, zoom:1, contrast:100 };
     state.fotoActief=true;
     if(state.kleuren.tekst==="#131720") state.kleuren.tekst="#ffffff";  // op foto meestal witte tekst
     buildColorControls(); render();
   };
-  im.onerror=()=>alert("Kon deze afbeelding niet laden.");
-  im.src=URL.createObjectURL(f); e.target.value="";
+  im.onerror=()=>{ URL.revokeObjectURL(url); alert("Kon deze afbeelding niet laden."); };
+  im.src=url; e.target.value="";
 };
 $("fotoZoom").oninput=e=>{ if(state.foto.img){ state.foto.zoom=(+e.target.value)/100; render(); } };
 $("fotoContrast").oninput=e=>{ if(state.foto.img){ state.foto.contrast=+e.target.value; render(); } };
 $("btnFotoWeg").onclick=()=>{
-  state.fotoActief=false; state.foto={ img:null, dx:0, dy:0, zoom:1, contrast:100 };
+  state.fotoActief=false; state.foto={ img:null, panX:0.5, panY:0.5, zoom:1, contrast:100 };
   state.kleuren.achtergrond="#ffffff"; if(state.kleuren.tekst==="#ffffff") state.kleuren.tekst="#131720";
   buildColorControls(); render();
 };
-// slepen om de foto te verplaatsen
+// slepen om de foto te verplaatsen (pan als fractie -> blijft behouden bij formaat-/zoomwissel)
 (function(){
   const cv=$("preview"); let drag=false, lx=0, ly=0;
   const factor=()=> cv.width / (cv.getBoundingClientRect().width||cv.width);
   cv.addEventListener("pointerdown",e=>{ if(!(state.fotoActief&&state.foto.img)) return;
     drag=true; lx=e.clientX; ly=e.clientY; cv.classList.add("dragging");
     try{ cv.setPointerCapture(e.pointerId); }catch(_){} });
-  cv.addEventListener("pointermove",e=>{ if(!drag) return; const s=factor();
-    state.foto.dx+=(e.clientX-lx)*s; state.foto.dy+=(e.clientY-ly)*s; lx=e.clientX; ly=e.clientY; render(); });
+  cv.addEventListener("pointermove",e=>{ if(!drag) return; e.preventDefault();
+    const f=state.foto, img=f.img; if(!img) return;
+    const s=factor(), cover=fotoCover(cv.width,cv.height,img);
+    const sw=img.naturalWidth*cover, sh=img.naturalHeight*cover;
+    if(sw>cv.width)  f.panX=clamp01(f.panX + (e.clientX-lx)*s/(cv.width-sw));   // (w-sw)<0 -> juiste richting
+    if(sh>cv.height) f.panY=clamp01(f.panY + (e.clientY-ly)*s/(cv.height-sh));
+    lx=e.clientX; ly=e.clientY; render(); });
   const stop=()=>{ drag=false; cv.classList.remove("dragging"); };
   cv.addEventListener("pointerup",stop); cv.addEventListener("pointercancel",stop);
 })();
