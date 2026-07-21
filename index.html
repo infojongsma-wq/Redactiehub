@@ -210,6 +210,10 @@
           <option value="claude-sonnet-5">Sonnet 5 — slimmer, iets duurder</option>
           <option value="claude-opus-4-8">Opus 4.8 — het slimst, het duurst</option>
         </select>
+        <div class="btnrow" style="margin-top:10px;align-items:center">
+          <button class="btn" id="btnAITest">Sleutel testen</button>
+          <span id="aiStatus" style="font-size:13px;font-weight:600"></span>
+        </div>
         <p class="hint" style="margin-top:8px">De sleutel wordt <b>alleen lokaal in je browser</b> bewaard. Je data gaat versleuteld (HTTPS) naar Anthropic — gebruik dit voor publieke data. Sleutel maken op <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> (apart account met facturatie; niet je Claude-abonnement).</p>
       </div>
     </div>
@@ -1191,6 +1195,28 @@ const AI_SCHEMA = {
 function aiKey(){ return ($("aiKey").value||"").trim(); }
 function aiModel(){ return $("aiModel").value || "claude-haiku-4-5"; }
 
+/* Minimale test-aanroep: controleert sleutel + verbinding, los van extractie. */
+async function aiTest(){
+  const st=$("aiStatus");
+  if(!aiKey()){ st.style.color="#c0392b"; st.textContent="Vul eerst een sleutel in."; return; }
+  const btn=$("btnAITest"), orig=btn.textContent; btn.disabled=true; btn.textContent="Testen…";
+  st.style.color="var(--ink-2)"; st.textContent="Bezig…";
+  try{
+    const res=await fetch(AI.endpoint,{ method:"POST",
+      headers:{ "content-type":"application/json", "x-api-key":aiKey(),
+        "anthropic-version":AI.version, "anthropic-dangerous-direct-browser-access":"true" },
+      body: JSON.stringify({ model:aiModel(), max_tokens:16, messages:[{role:"user", content:"Antwoord met exact: OK"}] }) });
+    if(res.ok){ st.style.color="#0a7d33"; st.textContent="✓ Sleutel werkt — "+aiModel(); return; }
+    let msg="Fout (HTTP "+res.status+")";
+    if(res.status===401) msg="Sleutel ongeldig";
+    else if(res.status===429) msg="Limiet of tegoed bereikt";
+    else if(res.status===403) msg="Geen toegang tot dit model";
+    else if(res.status===400) msg="Verzoek geweigerd (400)";
+    st.style.color="#c0392b"; st.textContent="✕ "+msg;
+  }catch(_){ st.style.color="#c0392b"; st.textContent="✕ Geen verbinding (netwerk of CORS)"; }
+  finally{ btn.disabled=false; btn.textContent=orig; }
+}
+
 async function aiExtract(){
   const raw=$("raw").value.trim();
   if(!raw){ alert("Plak eerst data of tekst."); return; }
@@ -1251,6 +1277,7 @@ $("btnText").onclick=()=>{ const p=extractFromText($("raw").value);
   showData(p);
 };
 $("btnAI").onclick=aiExtract;
+$("btnAITest").onclick=aiTest;
 $("btnAISettings").onclick=()=>$("aiSettings").classList.toggle("hidden");
 try{ const k=localStorage.getItem("rh_ai_key"); if(k) $("aiKey").value=k;
      const m=localStorage.getItem("rh_ai_model"); if(m) $("aiModel").value=m; }catch(_){}
