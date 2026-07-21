@@ -101,9 +101,13 @@ waarde-labels en de datatabel standaard aan.
 
 - **Lettertype:** de tool gebruikt **Roobert** (staat op de redactie-computers);
   op een computer zonder Roobert valt hij netjes terug op een systeemletter.
-- **Logo:** rechtsonder staat nu een tekst-badge "Oost". Wil je het echte logo?
-  Vervang `drawLogo()` door het tekenen van een ingesloten logo-afbeelding
-  (als data-URL).
+- **Logo:** rechtsonder staat het RTV Oost-woordmerk **"oost"**, getekend in
+  Roobert SemiBold met de huisstijl-kerning. Het kleurt automatisch mee volgens
+  de huisstijl-regels: **blauw op een lichte achtergrond, wit op een blauwe of
+  donkere achtergrond**. De kerning staat in `LOGO_KERNING`/`LOGO_KERN_BASE`
+  bovenaan de tekenfunctie. (Voor het exacte woordmerk is Roobert nodig.)
+- **Merknaam in tekst:** schrijf de naam in geschreven tekst voluit als
+  **RTV Oost**; het kleine "oost" is uitsluitend het grafische logo.
 
 ---
 

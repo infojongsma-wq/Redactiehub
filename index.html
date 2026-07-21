@@ -42,9 +42,9 @@
     display:flex;align-items:center;gap:14px;
   }
   header.app .logo{
-    font-weight:800;font-size:22px;letter-spacing:-.5px;
-    background:#fff;color:var(--oost-donker);
-    padding:2px 10px;border-radius:8px;
+    font-family:var(--font);font-weight:600;font-size:22px;letter-spacing:-1.5px;
+    background:#fff;color:var(--oost-blauw);
+    padding:2px 12px;border-radius:8px;
   }
   header.app h1{font-size:17px;margin:0;font-weight:600}
   header.app .sub{opacity:.7;font-size:13px;margin-left:auto}
@@ -150,7 +150,7 @@
 </style>
 
 <header class="app">
-  <span class="logo">Oost</span>
+  <span class="logo">oost</span>
   <h1>Grafiekmaker · Redactiehub</h1>
   <span class="sub">datavisualisatie in de huisstijl</span>
 </header>
@@ -603,18 +603,24 @@ function render(){
   }
 }
 
+/* RTV Oost-woordmerk "oost" — Roobert SemiBold met de huisstijl-kerning.
+   Kleurregel: blauw logo op lichte achtergrond, wit logo op blauwe/donkere
+   achtergrond (conform de huisstijl-varianten). */
+const LOGO_KERNING = { oo:-0.50, os:-0.45, st:-0.70 };   // huisstijl-kerning per letterpaar
+const LOGO_KERN_BASE = 0.16;                             // tracking-eenheid (fractie van de fontgrootte)
 function drawLogo(ctx,xRight,yBase,S,ink,darkBg){
-  const txt=HUISSTIJL.logoTekst;
-  ctx.font=`800 ${Math.round(34*S)}px ${HUISSTIJL.fontFamily}`;
-  ctx.textAlign="right"; ctx.textBaseline="alphabetic";
-  const w=ctx.measureText(txt).width, padx=Math.round(12*S), pady=Math.round(6*S);
-  const boxW=w+padx*2, boxH=Math.round(46*S);
-  const bx=xRight-boxW, by=yBase-boxH+Math.round(20*S);
-  ctx.fillStyle= darkBg? "#ffffff" : "#131720";
-  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx,by,boxW,boxH,Math.round(8*S)) : ctx.rect(bx,by,boxW,boxH); ctx.fill();
-  ctx.fillStyle= darkBg? "#131720" : "#ffffff";
-  ctx.fillText(txt, xRight-padx, by+boxH-pady*2.1);
-  ctx.textAlign="left";
+  const fs=Math.round(44*S);
+  ctx.save();
+  ctx.font=`600 ${fs}px Roobert, ${HUISSTIJL.fontFamily}`;   // Roobert SemiBold (logo-gewicht)
+  ctx.textAlign="left"; ctx.textBaseline="alphabetic";
+  ctx.fillStyle = darkBg ? "#ffffff" : "#1361ff";           // wit op donker/blauw · blauw op licht
+  const letters=["o","o","s","t"];
+  const w=letters.map(l=>ctx.measureText(l).width);
+  const gaps=[LOGO_KERNING.oo,LOGO_KERNING.os,LOGO_KERNING.st].map(k=>k*LOGO_KERN_BASE*fs);
+  const total=w.reduce((a,b)=>a+b,0)+gaps.reduce((a,b)=>a+b,0);
+  let x=xRight-total; const y=yBase+Math.round(16*S);
+  for(let i=0;i<letters.length;i++){ ctx.fillText(letters[i],x,y); x+=w[i]+(gaps[i]||0); }
+  ctx.restore();
 }
 
 function drawLegend(ctx,plot,S,F,ink){
