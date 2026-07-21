@@ -404,22 +404,68 @@ function detectDelim(text){
   if(text.includes(";"))  return ";";
   return null; // komma is riskant (decimaalteken) -> alleen als tabel expliciet
 }
-function splitCells(line, delim){
-  return line.split(delim).map(c=>c.trim());
+/* robuuste CSV/TSV-splitser: respecteert "quotes", ""->" en scheidingstekens/regeleindes binnen quotes */
+function parseDelimited(text, delim){
+  const rows=[]; let row=[], cell="", q=false;
+  const s=text.replace(/\r\n?/g,"\n");
+  for(let i=0;i<s.length;i++){
+    const ch=s[i];
+    if(q){
+      if(ch==='"'){ if(s[i+1]==='"'){ cell+='"'; i++; } else q=false; }
+      else cell+=ch;
+    } else if(ch==='"'){ q=true; }
+    else if(ch===delim){ row.push(cell); cell=""; }
+    else if(ch==='\n'){ row.push(cell); rows.push(row); row=[]; cell=""; }
+    else cell+=ch;
+  }
+  row.push(cell); rows.push(row);
+  return rows.map(r=>r.map(c=>c.trim())).filter(r=>r.some(c=>c!==""));
+}
+/* gedeelde lange voorloop in labels inkorten: "...(0-3), 0 jaar" -> "0 jaar" (+ voorloop als titel-tip) */
+function shortenLabels(labels){
+  const filled=labels.filter(l=>l);
+  if(filled.length<2) return { labels, prefix:"" };
+  let pre=filled[0];
+  for(const l of filled){ let i=0; while(i<pre.length && i<l.length && pre[i]===l[i]) i++; pre=pre.slice(0,i); if(!pre) break; }
+  if(pre.length<8) return { labels, prefix:"" };
+  let cut=-1, cl=0;
+  for(const sep of [", ",": "," - "," – ","; "]){ const k=pre.lastIndexOf(sep); if(k>cut){ cut=k; cl=sep.length; } }
+  let at;
+  if(cut>=0) at=cut+cl;
+  else if(pre.length>=14) at=pre.length;
+  else return { labels, prefix:"" };
+  const out=labels.map(l=> l ? l.slice(at).replace(/^[\s,;:–-]+/,"").trim() : l);
+  if(out.some((l,i)=> labels[i] && !l)) return { labels, prefix:"" };   // nooit lege labels maken
+  const prefix = pre.slice(0, cut>=0?cut:at).replace(/[\s,;:–-]+$/,"").trim();
+  return { labels:out, prefix };
+}
+function finishTable(labels, series, bronHint){
+  const sh=shortenLabels(labels);
+  const out={ labels:sh.labels, series };
+  if(sh.prefix) out.titelHint=sh.prefix;
+  if(bronHint) out.bronHint=bronHint;
+  return out;
 }
 function parseInput(text){
-  const lines = text.replace(/\r/g,"").split("\n").map(l=>l.trim()).filter(l=>l.length);
-  if(!lines.length) return { labels:[], series:[] };
+  const rawLines = text.replace(/\r/g,"").split("\n").map(l=>l.trim()).filter(l=>l.length);
+  if(!rawLines.length) return { labels:[], series:[] };
 
   const delim = detectDelim(text);
 
   // ---- TABEL-MODUS: tab of puntkomma aanwezig -> raster met meerdere reeksen ----
   if(delim){
-    let rows = lines.map(l=>splitCells(l, delim));
-    const ncols = Math.max(...rows.map(r=>r.length));
-    rows = rows.map(r=>{ while(r.length<ncols) r.push(""); return r; });
+    let rows = parseDelimited(text, delim);
+    if(!rows.length) return { labels:[], series:[] };
+    let ncols = Math.max(...rows.map(r=>r.length));
+    rows = rows.map(r=>{ while(r.length<ncols) r.push(""); return r.slice(0,ncols); });
+    // volledig lege kolommen weg (bv. door een afsluitende ; of dubbele scheidingstekens)
+    const keep=[]; for(let c=0;c<ncols;c++){ if(rows.some(r=>r[c]!=="")) keep.push(c); }
+    if(keep.length<ncols){ rows=rows.map(r=>keep.map(c=>r[c])); ncols=keep.length; }
+    if(ncols===0) return { labels:[], series:[] };
+    // losse titelrijen bovenaan (één gevulde cel, gevolgd door een bredere rij) overslaan
+    while(rows.length>2 && ncols>=2 && rows[0].filter(x=>x!=="").length===1 && rows[1].filter(x=>x!=="").length>=2) rows.shift();
 
-    if(ncols===1) return pairsMode(lines);
+    if(ncols===1) return pairsMode(rows.map(r=>r[0]));
 
     // koprij? kolommen 2..n van rij 0 zijn niet-numeriek, OF tekst-eerste-cel + jaartal-koppen (2019, 2020…)
     const c0 = rows[0].slice(1);
@@ -429,21 +475,52 @@ function parseInput(text){
                        (firstCellText && c0.length>0 && c0.every(isYear));
     const header = (headerLike && rows.length>1) ? rows[0] : null;
     const body = header ? rows.slice(1) : rows;
+    if(!body.length) return { labels:[], series:[] };
 
+    const numRatio = c=>{ let n=0,t=0; for(const r of body){ const v=r[c]; if(v==null||v==="") continue; t++; if(!isNaN(parseNum(v))) n++; } return t? n/t : 0; };
+    const distinct = c=> new Set(body.map(r=>r[c]).filter(x=>x!=="")).size;
+    const colVals = c=> body.map(r=>{ const raw=r[c]; if(raw==null||String(raw).trim()==="") return null; const v=parseNum(raw); return isNaN(v)?null:v; });
+
+    // "smalle" tabel: kolom 0 = labels, elke kolom erna grotendeels numeriek -> klassiek gedrag
+    let allNumeric = ncols>1;
+    for(let j=1;j<ncols;j++){ if(numRatio(j)<0.5){ allNumeric=false; break; } }
+
+    if(allNumeric){
+      const labels = body.map(r=>r[0] || "");
+      const series = [];
+      for(let j=1;j<ncols;j++){
+        series.push({ naam: header ? (header[j] || ("Reeks "+j)) : (ncols>2 ? "Reeks "+j : "Waarde"), waarden: colVals(j) });
+      }
+      return finishTable(labels, series);
+    }
+
+    // ---- BREDE / LANGE EXPORT (bv. dataportaal): kies waardekolom(men) + beste labelkolom ----
+    const valueCols=[]; for(let c=0;c<ncols;c++){ if(numRatio(c)>=0.6 && distinct(c)>=2) valueCols.push(c); }
+    if(valueCols.length){
+      const pref=/indicator|label|categor|dimensie|gebied|onderwerp|naam|regio|gemeente|plaats|wijk|buurt|leeftijd|jaar|partij|meting|kenmerk|antwoord/i;
+      let labelCol=-1, best=0;
+      for(let c=0;c<ncols;c++){
+        if(valueCols.includes(c)) continue;
+        let score=distinct(c); if(score<2) continue;
+        if(header && pref.test(header[c]||"")) score+=1000;   // duidelijke labelkoppen krijgen voorrang
+        if(score>best){ best=score; labelCol=c; }
+      }
+      const labels = labelCol>=0 ? body.map(r=>r[labelCol]||"") : body.map((_,i)=>"Rij "+(i+1));
+      const series = valueCols.map(c=>({ naam: header ? (header[c]||"Waarde") : "Waarde", waarden: colVals(c) }));
+      let bronHint="";
+      if(header){ for(let c=0;c<ncols;c++){ if(/^\s*bron\s*$/i.test(header[c]||"") && distinct(c)===1){ const rr=body.find(r=>r[c]); if(rr) bronHint=rr[c]; } } }
+      return finishTable(labels, series, bronHint);
+    }
+
+    // geen numerieke kolom herkend -> klassieke terugval (kolom 0 = labels)
     const labels = body.map(r=>r[0] || "");
     const series = [];
-    for(let j=1;j<ncols;j++){
-      series.push({
-        naam: header ? (header[j] || ("Reeks "+j)) : (ncols>2 ? "Reeks "+j : "Waarde"),
-        // lege/niet-numerieke cel -> null (= ontbrekende meting), niet 0
-        waarden: body.map(r=>{ const raw=r[j]; if(raw==null||String(raw).trim()==="") return null; const v=parseNum(raw); return isNaN(v)?null:v; }),
-      });
-    }
-    return { labels, series };
+    for(let j=1;j<ncols;j++){ series.push({ naam: header ? (header[j] || ("Reeks "+j)) : (ncols>2 ? "Reeks "+j : "Waarde"), waarden: colVals(j) }); }
+    return finishTable(labels, series);
   }
 
   // ---- PAREN-MODUS: "label: waarde", "label waarde", "label = waarde" ----
-  return pairsMode(lines);
+  return pairsMode(rawLines);
 }
 function pairsMode(lines){
   const labels=[], vals=[];
@@ -552,13 +629,25 @@ function excelSerialToStr(serial){
   const dd=String(d.getUTCDate()).padStart(2,"0"), mm=String(d.getUTCMonth()+1).padStart(2,"0");
   return dd+"-"+mm+"-"+d.getUTCFullYear();
 }
+function pctStyleSet(stylesXml){                              // welke stijl-indexen zijn percentages?
+  const set=new Set(); if(!stylesXml) return set;
+  const doc=xmlDoc(stylesXml);
+  const pct=new Set([9,10]);                                  // ingebouwd: 0% en 0.00%
+  for(const nf of doc.getElementsByTagName("numFmt")){ if((nf.getAttribute("formatCode")||"").includes("%")) pct.add(+nf.getAttribute("numFmtId")); }
+  const xfs=doc.getElementsByTagName("cellXfs")[0];
+  if(xfs){ let i=0; for(const xf of xfs.getElementsByTagName("xf")){ if(pct.has(+(xf.getAttribute("numFmtId")||0))) set.add(i); i++; } }
+  return set;
+}
+// getal -> nette NL-string: float-ruis weg (371,4999… -> 371,5) en komma als decimaalteken
+function numToNL(x){ if(!isFinite(x)) return String(x); return String(parseFloat(x.toPrecision(12))).replace(".",","); }
 async function readXlsx(file){
   const buf=await file.arrayBuffer(), u8=new Uint8Array(buf), view=new DataView(buf);
   const dir=readZipDir(view,u8);
   const ssXml=await zipEntryText(view,u8,dir,"xl/sharedStrings.xml");
   const shared=[];
   if(ssXml){ for(const si of xmlDoc(ssXml).getElementsByTagName("si")){ let s=""; for(const t of si.getElementsByTagName("t")) s+=t.textContent; shared.push(s); } }
-  const dateStyles=dateStyleSet(await zipEntryText(view,u8,dir,"xl/styles.xml"));
+  const stylesXml=await zipEntryText(view,u8,dir,"xl/styles.xml");
+  const dateStyles=dateStyleSet(stylesXml), pctStyles=pctStyleSet(stylesXml);
   // eerste werkblad volgens workbook-volgorde (val terug op laagste sheetN.xml)
   let sheetPath=null;
   const wbXml=await zipEntryText(view,u8,dir,"xl/workbook.xml");
@@ -587,6 +676,8 @@ async function readXlsx(file){
         else if(t==="str") val=v;
         else if(t==="b") val=(v==="1"?"waar":"onwaar");
         else if(v!==""&&s!=null&&dateStyles.has(+s)) val=excelSerialToStr(+v);
+        else if(v!==""&&s!=null&&pctStyles.has(+s)&&!isNaN(+v)) val=numToNL((+v)*100);   // 0,421 (42,1%) -> "42,1"
+        else if(v!==""&&(t==null||t==="n")&&!isNaN(+v)) val=numToNL(+v);                  // gewoon getal: ruis weg + NL-komma
         else val=v;
       }
       arr[ci]=val;
@@ -1210,18 +1301,13 @@ function generate(){
   const raw=$("raw").value;
   const parsed=parseInput(raw);
   if(!parsed.labels.length){ alert("Geen data gevonden. Plak cijfers of gebruik ‘Cijfers uit tekst halen’."); return; }
-  state.data=parsed;
-  // behoud eerder gekozen reekskleuren bij opnieuw genereren; vul alleen nieuwe reeksen aan
-  const vorige = state.kleuren.reeks || [];
-  state.kleuren.reeks = state.data.series.map((_,i)=> vorige[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
-  state.gegenereerd=true;
-  $("empty").classList.add("hidden");
-  $("preview").classList.remove("hidden");
-  $("downloadbar").classList.remove("hidden");
-  $("editcard").classList.remove("hidden");
-  $("colorcard").classList.remove("hidden");
-  buildDataTable(); buildColorControls(); buildSizeButtons();
-  render();
+  showData(parsed);
+}
+// vul Titel/Bron alleen aan als ze nog leeg zijn (uit brede exports afgeleid); nooit overschrijven
+function applyHints(p){
+  if(!p) return;
+  if(p.titelHint && !$("titel").value.trim()) $("titel").value=p.titelHint;
+  if(p.bronHint  && !$("bron").value.trim())  $("bron").value=p.bronHint;
 }
 
 function downloadPng(){
@@ -1246,6 +1332,7 @@ function flash(btn,txt){ const o=btn.textContent; btn.textContent=txt; setTimeou
 
 /* toon verwerkte data + bouw alle bedieningen (gedeeld door bestand- en tekst-extractie) */
 function showData(p){
+  applyHints(p);
   const vorige=state.kleuren.reeks||[];
   state.data=p;
   state.kleuren.reeks=p.series.map((_,i)=> vorige[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
@@ -1285,7 +1372,9 @@ $("file").onchange=async e=>{ const f=e.target.files[0]; if(!f) return; const na
     finally{ btn.textContent=o; }
     return;
   }
-  const r=new FileReader(); r.onload=()=>{ $("raw").value=r.result; }; r.readAsText(f,"utf-8"); };
+  const r=new FileReader(); r.onload=()=>{ $("raw").value=r.result;
+    try{ const p=parseInput(r.result); if(p.labels.length) showData(p); }catch(_){}   // CSV/tekst: meteen tonen
+  }; r.readAsText(f,"utf-8"); };
 
 /* ---- foto als achtergrond ---- */
 $("fotoFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return;
