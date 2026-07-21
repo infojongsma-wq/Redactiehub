@@ -1580,13 +1580,24 @@ function iconDashboard(){return `<svg viewBox="0 0 40 34" fill="none" stroke-wid
 buildTypePicker();
 
 /* Voorbeeld krimpt naar compact zodra je rechts naar de data scrolt (met
-   hysterese zodat het niet flikkert); omhoog scrollen maakt 'm weer groot. */
+   hysterese zodat het niet flikkert); omhoog scrollen maakt 'm weer groot.
+   Extra: in de tabel klikken terwijl die amper zichtbaar is -> ook krimpen. */
 (function(){
   const cr=document.querySelector(".col-right"); if(!cr) return;
+  const ec=document.getElementById("editcard");
+  const inTabel=()=> ec && ec.contains(document.activeElement);
   cr.addEventListener("scroll",()=>{
     const sc=cr.scrollTop;
     if(!cr.classList.contains("compact") && sc>110) cr.classList.add("compact");
-    else if(cr.classList.contains("compact") && sc<30) cr.classList.remove("compact");
+    // niet terug-uitklappen zolang je in de tabel aan het typen bent
+    else if(cr.classList.contains("compact") && sc<30 && !inTabel()) cr.classList.remove("compact");
   },{passive:true});
+  if(ec) ec.addEventListener("focusin",()=>{
+    if(!matchMedia("(min-width:921px)").matches) return;
+    const tw=ec.querySelector(".tablewrap"); if(!tw) return;
+    const r=tw.getBoundingClientRect();
+    const zichtbaar=Math.min(r.bottom,innerHeight)-Math.max(r.top,0);
+    if(zichtbaar<240) cr.classList.add("compact");   // tabel amper in beeld -> maak ruimte
+  });
 })();
 </script>
