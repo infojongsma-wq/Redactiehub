@@ -345,6 +345,7 @@ const CHARTS = [
   { id:"donut",     naam:"Donut",           icon:iconDonut },
   { id:"lollipop",  naam:"Rangschikking",   icon:iconLolli },
   { id:"kpi",       naam:"Groot getal",     icon:iconKpi },
+  { id:"dashboard", naam:"Dashboard",       icon:iconDashboard },
 ];
 
 /* ============================================================================
@@ -864,6 +865,7 @@ function render(){
     case "donut":     drawPie(ctx,p2,data,ctxColors,0.58);   break;
     case "lollipop":  drawLollipop(ctx,p2,data,ctxColors);   break;
     case "kpi":       drawKpi(ctx,p2,data,ctxColors);        break;
+    case "dashboard": drawDashboard(ctx,p2,data,ctxColors);  break;
   }
 }
 
@@ -1212,6 +1214,57 @@ function drawKpi(ctx,plot,data,C){
   ctx.textAlign="left";
 }
 
+// Dashboard: rij ring-meters, één per categorie (eerste reeks). Elk toont het cijfer in het midden.
+function drawDashboard(ctx,plot,data,C){
+  const {S,F,ink,muted,darkBg}=C;
+  const s=data.series[0];
+  const items=(s?data.labels:[]).map((l,i)=>({ l:l||("Categorie "+(i+1)), v:(s.waarden[i]==null?0:s.waarden[i]), i }));
+  if(!items.length){ ctx.fillStyle=muted; ctx.textAlign="center"; ctx.font=`500 ${Math.round(30*S)}px ${F}`;
+    ctx.fillText("Geen data", plot.x+plot.w/2, plot.y+plot.h/2); ctx.textAlign="left"; return; }
+  const vals=items.map(it=>it.v);
+  const dmax=Math.max(...vals,0), dmin=Math.min(...vals,0);
+  const pctMode = dmin>=0 && dmax<=100;                       // waarden 0..100 -> tonen als percentage van 100
+  const scaleMax = pctMode ? 100 : (niceScale(0, dmax||1, 5).max || 1);
+  const anyDec = vals.some(v=> Math.abs(v-Math.round(v))>1e-9);
+  const fmtG = v => (anyDec ? v.toLocaleString("nl-NL",{minimumFractionDigits:1,maximumFractionDigits:1})
+                            : v.toLocaleString("nl-NL",{maximumFractionDigits:0}));
+  const n=items.length;
+  let cols=Math.min(n, Math.max(1, Math.floor(plot.w/(240*S))), 5);
+  const rows=Math.ceil(n/cols);
+  const cellW=plot.w/cols, cellH=plot.h/rows;
+  const track = darkBg ? "rgba(255,255,255,.20)" : "rgba(19,23,32,.12)";
+  items.forEach((it,k)=>{
+    const r=Math.floor(k/cols), c=k%cols;
+    const cx=plot.x + c*cellW + cellW/2;
+    const cy=plot.y + r*cellH + cellH*0.40;
+    const R=Math.min(cellW*0.40, cellH*0.34);
+    const th=Math.max(6*S, R*0.42), rInner=R-th;
+    // spoor (hele ring)
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.arc(cx,cy,rInner,0,Math.PI*2,true);
+    ctx.fillStyle=track; ctx.fill("evenodd");
+    // gevulde boog vanaf boven, met de klok mee
+    const frac=Math.max(0,Math.min(1, scaleMax? it.v/scaleMax : 0));
+    if(frac>0){
+      const a0=-Math.PI/2, a1=a0+frac*Math.PI*2;
+      ctx.beginPath(); ctx.arc(cx,cy,R,a0,a1); ctx.arc(cx,cy,rInner,a1,a0,true); ctx.closePath();
+      // eigen kleur behouden (geel-op-blauw mag), alleen terugvallen als de kleur wegvalt tegen de achtergrond
+      let col=catColor(it.i); if(contrastRatio(col,currentSurface())<1.35) col=state.kleuren.tekst;
+      ctx.fillStyle=col; ctx.fill();
+    }
+    // cijfer in het midden
+    const txt=fmtG(it.v)+(pctMode?"%":"");
+    ctx.fillStyle=ink; ctx.textAlign="center"; ctx.textBaseline="middle";
+    let fs=Math.round(R*0.52); ctx.font=`800 ${fs}px ${F}`;
+    while(fs>10 && ctx.measureText(txt).width>rInner*1.9){ fs-=2; ctx.font=`800 ${fs}px ${F}`; }
+    ctx.fillText(txt, cx, cy);
+    // label onder de ring
+    ctx.fillStyle=ink; ctx.textBaseline="top"; ctx.textAlign="center"; ctx.font=`600 ${Math.round(30*S)}px ${F}`;
+    for(const [li,line] of wrapText(ctx, it.l, cellW*0.92).slice(0,2).entries())
+      ctx.fillText(line, cx, cy+R+Math.round(16*S)+li*Math.round(34*S));
+  });
+  ctx.textAlign="left"; ctx.textBaseline="top";
+}
+
 /* ============================================================================
    7. UI-KOPPELING
    ========================================================================== */
@@ -1290,7 +1343,7 @@ function buildColorControls(){
   // kleur per reeks / per segment / enkele kleur — afhankelijk van het grafiektype
   const grp=$("seriesColors"); grp.innerHTML="";
   const lbl=$("seriesColorGrp").querySelector(".lbl");
-  const byCategory = ["taart","donut"].includes(state.type);
+  const byCategory = ["taart","donut","dashboard"].includes(state.type);
   const singleColor = ["lollipop","kpi"].includes(state.type);
   let rows;
   if(byCategory){ lbl.textContent="Kleur per segment"; rows=state.data.labels.map((l,i)=>({nm:l||("Segment "+(i+1)), idx:i})); }
@@ -1456,6 +1509,7 @@ function iconTaart(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r=
 function iconDonut(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r="14" fill="#1361ff"/><path d="M20 17 L20 3 A14 14 0 0 1 33 21 Z" fill="#ff6813"/><circle cx="20" cy="17" r="6.5" fill="#fff"/></svg>`}
 function iconLolli(){return `<svg viewBox="0 0 40 34"><g stroke="#1361ff" stroke-width="2.5"><line x1="4" y1="8" x2="26" y2="8"/><line x1="4" y1="17" x2="34" y2="17"/><line x1="4" y1="26" x2="16" y2="26"/></g><g fill="#1361ff"><circle cx="26" cy="8" r="4"/><circle cx="34" cy="17" r="4"/><circle cx="16" cy="26" r="4"/></g></svg>`}
 function iconKpi(){return `<svg viewBox="0 0 40 34"><text x="20" y="24" font-size="22" font-weight="800" text-anchor="middle" fill="#1361ff" font-family="Arial">73%</text></svg>`}
+function iconDashboard(){return `<svg viewBox="0 0 40 34" fill="none" stroke-width="4"><circle cx="11" cy="17" r="7" stroke="#e6e9f0"/><path d="M11 10 a7 7 0 0 1 5 12" stroke="#1361ff" stroke-linecap="round"/><circle cx="29" cy="17" r="7" stroke="#e6e9f0"/><path d="M29 10 a7 7 0 0 1 6 8" stroke="#ff6813" stroke-linecap="round"/></svg>`}
 
 /* ---- init ---- */
 buildTypePicker();

@@ -70,6 +70,7 @@ een vaste link zonder iets te downloaden. Zie *Online zetten* hieronder.
 | **Taart / Donut** | verdeling van één geheel (max ~6 delen) |
 | **Rangschikking** (lollipop) | top-lijstjes, netter dan veel staven |
 | **Groot getal** (KPI) | één cijfer dat het verhaal is |
+| **Dashboard** (ring-meters) | rij ring-meters met % per categorie (bijv. per leeftijdsgroep) |
 
 Meerdere kolommen/reeksen naast elkaar? Zet gewoon meer kolommen in je data —
 de tool maakt er automatisch een **gegroepeerde** grafiek van.
