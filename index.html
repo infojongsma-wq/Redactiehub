@@ -378,7 +378,9 @@ function parseNum(raw){
   if(raw==null) return NaN;
   let s = String(raw).trim().replace(/ /g,"").replace(/[%€$\s]/g,"");
   if(!s) return NaN;
-  const neg = /^-/.test(s); s = s.replace(/^-/,"");
+  const neg = /^-/.test(s); s = s.replace(/^[-+]/,"");
+  // moet VOLLEDIG een getal zijn — anders is het tekst ("12 tot 18 jaar" is géén 12)
+  if(!/^[0-9]+([.,][0-9]+)*$/.test(s)) return NaN;
   const hasComma = s.includes(","), hasDot = s.includes(".");
   if(hasComma && hasDot){
     // laatste scheidingsteken is de decimaal
@@ -480,6 +482,13 @@ function parseInput(text){
     if(ncols===0) return { labels:[], series:[] };
     // losse titelrijen bovenaan (één gevulde cel, gevolgd door een bredere rij) overslaan
     while(rows.length>2 && ncols>=2 && rows[0].filter(x=>x!=="").length===1 && rows[1].filter(x=>x!=="").length>=2) rows.shift();
+    // losse noot-/bronregels onderaan (één gevulde cel) overslaan; "Bron: …" vult meteen het Bron-veld
+    let bronNote="";
+    while(rows.length>2 && ncols>=2 && rows[rows.length-1].filter(x=>x!=="").length===1){
+      const only=rows[rows.length-1].find(x=>x!=="")||"";
+      if(/^\s*bron\b/i.test(only)) bronNote=only.replace(/^\s*bron\s*:?\s*/i,"").trim();
+      rows.pop();
+    }
 
     if(ncols===1) return pairsMode(rows.map(r=>r[0]));
 
@@ -507,7 +516,7 @@ function parseInput(text){
       for(let j=1;j<ncols;j++){
         series.push({ naam: header ? (header[j] || ("Reeks "+j)) : (ncols>2 ? "Reeks "+j : "Waarde"), waarden: colVals(j) });
       }
-      return finishTable(labels, series);
+      return finishTable(labels, series, bronNote);
     }
 
     // ---- BREDE / LANGE EXPORT (bv. dataportaal): kies waardekolom(men) + beste labelkolom ----
@@ -523,8 +532,8 @@ function parseInput(text){
       }
       const labels = labelCol>=0 ? body.map(r=>r[labelCol]||"") : body.map((_,i)=>"Rij "+(i+1));
       const series = valueCols.map(c=>({ naam: header ? (header[c]||"Waarde") : "Waarde", waarden: colVals(c) }));
-      let bronHint="";
-      if(header){ for(let c=0;c<ncols;c++){ if(/^\s*bron\s*$/i.test(header[c]||"") && distinct(c)===1){ const rr=body.find(r=>r[c]); if(rr) bronHint=rr[c]; } } }
+      let bronHint=bronNote;
+      if(!bronHint && header){ for(let c=0;c<ncols;c++){ if(/^\s*bron\s*$/i.test(header[c]||"") && distinct(c)===1){ const rr=body.find(r=>r[c]); if(rr) bronHint=rr[c]; } } }
       return finishTable(labels, series, bronHint);
     }
 
@@ -532,7 +541,7 @@ function parseInput(text){
     const labels = body.map(r=>r[0] || "");
     const series = [];
     for(let j=1;j<ncols;j++){ series.push({ naam: header ? (header[j] || ("Reeks "+j)) : (ncols>2 ? "Reeks "+j : "Waarde"), waarden: colVals(j) }); }
-    return finishTable(labels, series);
+    return finishTable(labels, series, bronNote);
   }
 
   // ---- PAREN-MODUS: "label: waarde", "label waarde", "label = waarde" ----
@@ -570,7 +579,7 @@ function extractFromText(text){
   const numRe = /-?\d[\d.,]*\s*(?:%|procent|euro|€)?/gi;
   const labels=[], vals=[]; const seen=new Set(); let m;
   while((m = numRe.exec(clean))){
-    const v = parseNum(m[0]); if(isNaN(v)) continue;
+    const numPart = (m[0].match(/-?\d[\d.,]*/)||[])[0]; const v = parseNum(numPart); if(isNaN(v)) continue;
     const before = clean.slice(0, m.index).trim().split(/\s+/).filter(Boolean).slice(-6);
     // zoek dichtstbijzijnde eigennaam (hoofdletter, geen stopwoord als "De/Het/Een") als label
     let capIdx=-1;
