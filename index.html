@@ -71,11 +71,18 @@
     .col-right .preview-card{position:sticky;top:0;z-index:6;flex:none;
       box-shadow:0 6px 18px rgba(11,27,51,.10)}
     #preview{max-height:50vh;transition:max-height .28s ease}
-    .col-right.compact #preview{max-height:21vh}
+    .col-right.compact #preview{max-height:28vh}
     .col-right.compact .preview-card h2{display:none}          /* compacte kop: meer ruimte voor de grafiek zelf */
-    .col-right.compact::after{content:"";display:block;flex:none;height:32vh}  /* houdt de scroll-ruimte stabiel (geen flikkeren) */
+    .col-right.compact::after{content:"";display:block;flex:none;height:26vh}  /* houdt de scroll-ruimte stabiel (geen flikkeren) */
+    /* handmatige stand via het sleepbalkje: vaste, zelfgekozen hoogte */
+    .col-right.manual #preview{max-height:var(--previewH,50vh);transition:none}
+    .col-right.manual .preview-card h2{display:revert}
+    #splitter{display:flex;justify-content:center;align-items:center;padding:7px 0 1px;cursor:ns-resize;touch-action:none}
+    #splitter span{width:64px;height:5px;border-radius:3px;background:var(--lijn);transition:.12s}
+    #splitter:hover span{background:var(--oost-blauw);width:88px}
     #editcard .tablewrap{max-height:52vh;overflow:auto;overscroll-behavior:contain}
   }
+  @media(max-width:920px){ #splitter{display:none} }
   @media(max-width:920px){ .wrap{grid-template-columns:1fr} }
 
   .card{
@@ -110,6 +117,7 @@
     padding:9px 14px;border-radius:10px;transition:.12s;
   }
   .btn:hover{border-color:var(--oost-blauw)}
+  .btn:disabled{opacity:.45;cursor:default;pointer-events:none}
   .btn.primary{background:var(--oost-blauw);color:#fff;border-color:var(--oost-blauw)}
   .btn.primary:hover{background:#0d4ad9}
   .btn.big{width:100%;padding:13px;font-size:16px;margin-top:4px}
@@ -303,6 +311,7 @@
           <button class="btn" id="btnCopy">📋 Kopieer</button>
         </div>
       </div>
+      <div id="splitter" title="Sleep om het voorbeeld groter of kleiner te maken · dubbelklik = automatisch"><span></span></div>
     </div>
 
     <div class="card hidden" id="editcard">
@@ -312,6 +321,7 @@
       <div class="btnrow" style="margin-top:10px">
         <button class="btn" id="btnAddRow">+ Rij</button>
         <button class="btn" id="btnAddSeries">+ Reeks</button>
+        <button class="btn" id="btnUndo" title="Ongedaan maken (Ctrl+Z) — haalt ook verwijderde rijen/reeksen terug" disabled>↶ Ongedaan</button>
         <button class="btn primary" id="btnUpdate" style="margin-left:auto">Grafiek bijwerken</button>
       </div>
     </div>
@@ -1336,17 +1346,23 @@ function buildDataTable(){
       `<td class="del"><button class="icon-btn" data-del="${i}">✕</button></td>`;
     t.appendChild(tr);
   });
-  t.querySelectorAll("input").forEach(inp=>inp.oninput=onTableEdit);
+  t.querySelectorAll("input").forEach(inp=>{ inp.oninput=onTableEdit;
+    inp.onfocus=()=>{ pendingSnap=snapshot(); }; });               // snapshot vóór de eerste toets
   t.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.del;
+    pushUndo();                                                   // verwijderde rij is terug te halen met Ctrl+Z
     state.data.labels.splice(i,1); state.data.series.forEach(s=>s.waarden.splice(i,1));
     state.kleuren.uitgelicht={};                                  // label-indexen verschuiven -> uitlichting resetten
     buildDataTable(); buildColorControls(); render(); });
   t.querySelectorAll("[data-dels]").forEach(b=>b.onclick=()=>{ const j=+b.dataset.dels;
     if(state.data.series.length<=1) return;                       // minstens één reeks houden
+    pushUndo();                                                   // verwijderde reeks is terug te halen met Ctrl+Z
     state.data.series.splice(j,1); state.kleuren.reeks.splice(j,1);
     buildDataTable(); buildColorControls(); render(); });
 }
 function onTableEdit(e){
+  // eerste wijziging binnen deze focus-sessie -> één undo-stap voor de hele bewerking
+  if(pendingSnap){ undoStack.push(pendingSnap); if(undoStack.length>50) undoStack.shift();
+    redoStack.length=0; pendingSnap=null; updateUndoBtn(); }
   const el=e.target, d=state.data;
   if(el.dataset.l!=null) d.labels[+el.dataset.l]=el.value;
   else if(el.dataset.s!=null) d.series[+el.dataset.s].naam=el.value;
@@ -1477,6 +1493,7 @@ function flash(btn,txt){ const o=btn.textContent; btn.textContent=txt; setTimeou
 /* toon verwerkte data + bouw alle bedieningen (gedeeld door bestand- en tekst-extractie) */
 function showData(p){
   applyHints(p);
+  if(state.gegenereerd && state.data && state.data.labels.length) pushUndo();   // vorige dataset terug te halen
   const vorige=state.kleuren.reeks||[];
   state.kleuren.uitgelicht={};        // uitlichting hoort bij de vorige dataset -> resetten
   state.data=p;
@@ -1487,14 +1504,36 @@ function showData(p){
   buildDataTable(); buildColorControls(); buildSizeButtons(); render();
 }
 
+/* ---- ongedaan maken (Ctrl+Z) / opnieuw (Ctrl+Y) ---- */
+const undoStack=[], redoStack=[]; let pendingSnap=null;
+function snapshot(){ return JSON.parse(JSON.stringify({ data:state.data,
+  reeks:state.kleuren.reeks, uitgelicht:state.kleuren.uitgelicht })); }
+function updateUndoBtn(){ const b=$("btnUndo"); if(b) b.disabled=!undoStack.length; }
+function pushUndo(){ undoStack.push(snapshot()); if(undoStack.length>50) undoStack.shift();
+  redoStack.length=0; pendingSnap=null; updateUndoBtn(); }
+function restoreSnap(s){ state.data=s.data; state.kleuren.reeks=s.reeks; state.kleuren.uitgelicht=s.uitgelicht||{};
+  buildDataTable(); buildColorControls(); render(); updateUndoBtn(); }
+function doUndo(){ if(!undoStack.length) return; redoStack.push(snapshot()); restoreSnap(undoStack.pop()); }
+function doRedo(){ if(!redoStack.length) return; undoStack.push(snapshot()); restoreSnap(redoStack.pop()); updateUndoBtn(); }
+document.addEventListener("keydown",e=>{
+  if(!(e.ctrlKey||e.metaKey) || !state.gegenereerd) return;
+  const k=e.key.toLowerCase();
+  // in de vrije tekstvelden laten we de browser z'n eigen tekst-undo doen
+  const vrij=["raw","titel","ondertitel","bron"].includes(document.activeElement&&document.activeElement.id);
+  if(vrij) return;
+  if(k==="z" && !e.shiftKey){ e.preventDefault(); doUndo(); }
+  else if(k==="y" || (k==="z" && e.shiftKey)){ e.preventDefault(); doRedo(); }
+});
+
 /* ---- event listeners ---- */
+$("btnUndo").onclick=doUndo;
 $("btnGen").onclick=generate;
 $("btnUpdate").onclick=()=>{ buildColorControls(); render(); };
 $("btnPng").onclick=downloadPng;
 $("btnCopy").onclick=copyPng;
 $("showValues").onchange=e=>{ state.toonWaarden=e.target.checked; render(); };
-$("btnAddRow").onclick=()=>{ state.data.labels.push(""); state.data.series.forEach(s=>s.waarden.push(0)); buildDataTable(); };
-$("btnAddSeries").onclick=()=>{ const j=state.data.series.length;
+$("btnAddRow").onclick=()=>{ pushUndo(); state.data.labels.push(""); state.data.series.forEach(s=>s.waarden.push(0)); buildDataTable(); };
+$("btnAddSeries").onclick=()=>{ pushUndo(); const j=state.data.series.length;
   state.data.series.push({naam:"Reeks "+(j+1), waarden:state.data.labels.map(()=>0)});
   state.kleuren.reeks[j]=HUISSTIJL.reeksVolgorde[j%HUISSTIJL.reeksVolgorde.length];
   buildDataTable(); buildColorControls(); };
@@ -1586,18 +1625,48 @@ buildTypePicker();
   const cr=document.querySelector(".col-right"); if(!cr) return;
   const ec=document.getElementById("editcard");
   const inTabel=()=> ec && ec.contains(document.activeElement);
+  const manual=()=> cr.classList.contains("manual");
   cr.addEventListener("scroll",()=>{
+    if(manual()) return;                                       // sleepbalkje actief -> vaste hoogte
     const sc=cr.scrollTop;
     if(!cr.classList.contains("compact") && sc>110) cr.classList.add("compact");
     // niet terug-uitklappen zolang je in de tabel aan het typen bent
     else if(cr.classList.contains("compact") && sc<30 && !inTabel()) cr.classList.remove("compact");
   },{passive:true});
   if(ec) ec.addEventListener("focusin",()=>{
-    if(!matchMedia("(min-width:921px)").matches) return;
+    if(manual() || !matchMedia("(min-width:921px)").matches) return;
     const tw=ec.querySelector(".tablewrap"); if(!tw) return;
     const r=tw.getBoundingClientRect();
     const zichtbaar=Math.min(r.bottom,innerHeight)-Math.max(r.top,0);
     if(zichtbaar<240) cr.classList.add("compact");   // tabel amper in beeld -> maak ruimte
   });
+})();
+
+/* Sleepbalkje onder het voorbeeld: zelf de hoogte kiezen (blijft bewaard);
+   dubbelklik = terug naar de automatische krimp-stand. */
+(function(){
+  const sp=document.getElementById("splitter"), cr=document.querySelector(".col-right"), cv=document.getElementById("preview");
+  if(!sp||!cr||!cv) return;
+  let drag=false, startY=0, startH=0;
+  const zetHoogte=h=>{
+    h=Math.max(120, Math.min(innerHeight*0.62, h));
+    cr.classList.add("manual"); cr.classList.remove("compact");
+    cr.style.setProperty("--previewH", Math.round(h)+"px");
+    try{ localStorage.setItem("rh_preview_h", String(Math.round(h))); }catch(_){}
+  };
+  sp.addEventListener("pointerdown",e=>{
+    if(!matchMedia("(min-width:921px)").matches) return;
+    drag=true; startY=e.clientY; startH=cv.getBoundingClientRect().height||300;
+    try{ sp.setPointerCapture(e.pointerId); }catch(_){} e.preventDefault();
+  });
+  sp.addEventListener("pointermove",e=>{ if(drag) zetHoogte(startH + (e.clientY-startY)); });
+  const stop=()=>{ drag=false; };
+  sp.addEventListener("pointerup",stop); sp.addEventListener("pointercancel",stop);
+  sp.addEventListener("dblclick",()=>{
+    cr.classList.remove("manual","compact"); cr.style.removeProperty("--previewH");
+    try{ localStorage.removeItem("rh_preview_h"); }catch(_){}
+  });
+  try{ const h=+localStorage.getItem("rh_preview_h");
+    if(h>0 && matchMedia("(min-width:921px)").matches){ cr.classList.add("manual"); cr.style.setProperty("--previewH", h+"px"); } }catch(_){}
 })();
 </script>
