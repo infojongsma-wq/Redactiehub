@@ -261,6 +261,8 @@
           <input type="range" id="fotoZoom" min="100" max="300" value="100" style="width:100%">
           <label class="fld" style="margin:8px 0 2px">Contrast</label>
           <input type="range" id="fotoContrast" min="50" max="160" value="100" style="width:100%">
+          <label class="fld" style="margin:8px 0 2px">Transparant (foto vervagen)</label>
+          <input type="range" id="fotoTransp" min="0" max="100" value="0" style="width:100%">
           <button class="btn" id="btnFotoWeg" style="margin-top:8px;padding:6px 12px;font-size:13px">Foto verwijderen</button>
         </div>
       </div>
@@ -355,7 +357,7 @@ const state = {
     reeks: HUISSTIJL.reeksVolgorde.slice(),
   },
   fotoActief: false,
-  foto: { img:null, panX:0.5, panY:0.5, zoom:1, contrast:100 },   // pan = fractie [0..1], formaat-onafhankelijk
+  foto: { img:null, panX:0.5, panY:0.5, zoom:1, contrast:100, transp:0 },   // pan = fractie [0..1], formaat-onafhankelijk
   toonWaarden: true,
   gegenereerd: false,
 };
@@ -828,7 +830,7 @@ function render(){
   const legendH = showTopLegend ? drawLegend(ctx,plot,S,F,ink) : 0;
   const p2={ ...plot, y:plot.y+legendH, h:plot.h-legendH };
 
-  const ctxColors={ ink, muted, grid, axis, F, S, darkBg };
+  const ctxColors={ ink, muted, grid, axis, F, S, darkBg, transp, foto };
   switch(state.type){
     case "kolom":     drawBars(ctx,p2,data,ctxColors,false); break;
     case "staaf":     drawBars(ctx,p2,data,ctxColors,true);  break;
@@ -854,6 +856,7 @@ function drawFotoBg(ctx,w,h){
   const x=(w-sw)*f.panX, y=(h-sh)*f.panY;   // panX/panY in [0..1] -> altijd binnen bereik, altijd beelddekkend
   ctx.save();
   ctx.filter=`contrast(${f.contrast}%)`;
+  ctx.globalAlpha=Math.max(0,Math.min(1, 1-(f.transp||0)/100));   // transparant-schuif: foto vervagen
   ctx.drawImage(img, x, y, sw, sh);
   ctx.restore();
 }
@@ -870,7 +873,7 @@ function drawFotoScrim(ctx,w,h,darkBg){
 
 function drawLegend(ctx,plot,S,F,ink){
   const items=state.data.series.map((s,i)=>({nm:s.naam,c:catColor(i)}));
-  ctx.font=`600 ${Math.round(26*S)}px ${F}`; ctx.textBaseline="middle";
+  ctx.font=`600 ${Math.round(35*S)}px ${F}`; ctx.textBaseline="middle";
   let x=plot.x, y=plot.y+Math.round(14*S); const box=Math.round(20*S), gap=Math.round(26*S);
   for(const it of items){
     const tw=ctx.measureText(it.nm).width;
@@ -886,7 +889,7 @@ function drawLegend(ctx,plot,S,F,ink){
 
 function yAxisAndGrid(ctx,plot,sc,C,fmt){
   const {muted,grid,axis,F,S}=C;
-  ctx.font=`500 ${Math.round(24*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
+  ctx.font=`500 ${Math.round(33*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
   ctx.strokeStyle=grid; ctx.lineWidth=Math.max(1,1*S);
   for(const t of sc.ticks){
     const y=plot.y+plot.h-((t-sc.min)/(sc.max-sc.min))*plot.h;
@@ -896,7 +899,7 @@ function yAxisAndGrid(ctx,plot,sc,C,fmt){
   ctx.textAlign="left"; ctx.textBaseline="top";
 }
 function measureYAxis(ctx,sc,C,fmt){
-  ctx.font=`500 ${Math.round(24*C.S)}px ${C.F}`;
+  ctx.font=`500 ${Math.round(33*C.S)}px ${C.F}`;
   let mw=0; for(const t of sc.ticks) mw=Math.max(mw,ctx.measureText(fmt(t)).width);
   return mw+Math.round(20*C.S);
 }
@@ -924,12 +927,12 @@ function drawBars(ctx,plot,data,C,horizontal){
         const top=Math.min(vy,zeroY), hgt=Math.abs(vy-zeroY);
         drawRR(ctx,x,top,bwe,hgt,Math.round(5*S), v>=0?"top":"bottom");
         if(state.toonWaarden && (ns*nl)<=28){
-          ctx.fillStyle=ink; ctx.font=`700 ${Math.round(23*S)}px ${F}`;
+          ctx.fillStyle=ink; ctx.font=`700 ${Math.round(32*S)}px ${F}`;
           ctx.textAlign="center"; ctx.textBaseline="bottom";
           ctx.fillText(fmtNum(v), x+bwe/2, top-Math.round(6*S)); ctx.textBaseline="top";
         }
       }
-      ctx.fillStyle=muted; ctx.font=`600 ${Math.round(24*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
+      ctx.fillStyle=muted; ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
       const lbl=data.labels[i]||"";
       ctx.fillText(fitLabel(ctx,lbl,band-6*S), p.x+band*i+band/2, p.y+p.h+Math.round(12*S));
     }
@@ -938,12 +941,12 @@ function drawBars(ctx,plot,data,C,horizontal){
     ctx.textAlign="left";
   } else {
     // horizontaal: labels links
-    ctx.font=`600 ${Math.round(25*S)}px ${F}`;
+    ctx.font=`600 ${Math.round(34*S)}px ${F}`;
     let lw=0; data.labels.forEach(l=>lw=Math.max(lw,ctx.measureText(l).width)); lw=Math.min(lw+20*S, plot.w*0.32);
     const p={x:plot.x+lw,y:plot.y,w:plot.w-lw,h:plot.h-Math.round(44*S)};  // ruimte voor de x-as-getallen boven de voetlijn
     const scx=niceScale(dmin,dmax,6);
     // verticale rasterlijnen
-    ctx.strokeStyle=C.grid; ctx.lineWidth=Math.max(1,1*S); ctx.font=`500 ${Math.round(23*S)}px ${F}`;
+    ctx.strokeStyle=C.grid; ctx.lineWidth=Math.max(1,1*S); ctx.font=`500 ${Math.round(32*S)}px ${F}`;
     ctx.textBaseline="top"; ctx.textAlign="center";
     for(const t of scx.ticks){
       const x=p.x+((t-scx.min)/(scx.max-scx.min))*p.w;
@@ -962,12 +965,12 @@ function drawBars(ctx,plot,data,C,horizontal){
         const left=Math.min(vx,zeroX), wid=Math.abs(vx-zeroX);
         drawRR(ctx,left,y,wid,bhe,Math.round(5*S), v>=0?"right":"left");
         if(state.toonWaarden && (ns*nl)<=28){
-          ctx.fillStyle=ink; ctx.font=`700 ${Math.round(23*S)}px ${F}`;
+          ctx.fillStyle=ink; ctx.font=`700 ${Math.round(32*S)}px ${F}`;
           ctx.textAlign="left"; ctx.textBaseline="middle";
           ctx.fillText(fmtNum(v), Math.max(vx,zeroX)+Math.round(8*S), y+bhe/2);
         }
       }
-      ctx.fillStyle=ink; ctx.font=`600 ${Math.round(25*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
+      ctx.fillStyle=ink; ctx.font=`600 ${Math.round(34*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
       ctx.fillText(fitLabel(ctx,data.labels[i]||"",lw-10*S), plot.x+lw-Math.round(12*S), gy+groupH/2);
     }
     ctx.textAlign="left"; ctx.textBaseline="top";
@@ -1020,7 +1023,7 @@ function drawStacked(ctx,plot,data,C){
       drawRR(ctx,x,y1,bw,(y0-y1)-gap, Math.round(5*S), top==="top"?"top":"flat");
       acc+=v;
     }
-    ctx.fillStyle=muted; ctx.font=`600 ${Math.round(24*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
+    ctx.fillStyle=muted; ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
     ctx.fillText(fitLabel(ctx,data.labels[i]||"",band-6*S), p.x+band*i+band/2, p.y+p.h+Math.round(12*S));
   }
   ctx.strokeStyle=axis; ctx.lineWidth=Math.max(1.5,1.5*S);
@@ -1062,7 +1065,7 @@ function drawLine(ctx,plot,data,C,area){
       ctx.fillStyle=col; ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(3.5,4.5*S),0,7); ctx.fill();
       if(state.toonWaarden && ns<=2 && nl<=14){
         const above = j%2===0;                      // reeksen wijken boven/onder uit -> geen overlap
-        ctx.fillStyle=ink; ctx.font=`700 ${Math.round(22*S)}px ${F}`; ctx.textAlign="center";
+        ctx.fillStyle=ink; ctx.font=`700 ${Math.round(30*S)}px ${F}`; ctx.textAlign="center";
         ctx.textBaseline= above?"bottom":"top";
         ctx.fillText(fmtNum(vals[i]), pt[0], pt[1]+(above?-Math.round(12*S):Math.round(12*S)));
         ctx.textBaseline="top";
@@ -1070,7 +1073,7 @@ function drawLine(ctx,plot,data,C,area){
     });
   }
   // x-labels
-  ctx.fillStyle=muted; ctx.font=`600 ${Math.round(24*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
+  ctx.fillStyle=muted; ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
   const every=Math.ceil(nl/12);
   data.labels.forEach((l,i)=>{ if(i%every===0) ctx.fillText(fitLabel(ctx,l,step*1.4||120), X(i), p.y+p.h+Math.round(12*S)); });
   ctx.strokeStyle=axis; ctx.lineWidth=Math.max(1.5,1.5*S);
@@ -1079,7 +1082,7 @@ function drawLine(ctx,plot,data,C,area){
 }
 
 function drawPie(ctx,plot,data,C,innerRatio){
-  const {S,F,ink,muted,darkBg}=C;
+  const {S,F,ink,muted,darkBg,transp}=C;
   const s=data.series[0];
   const items=data.labels.map((l,i)=>({l, v:Math.max(0,s.waarden[i]||0), c:catColor(i)}))
                          .filter(it=>it.v>0);
@@ -1103,12 +1106,12 @@ function drawPie(ctx,plot,data,C,innerRatio){
     }
     ctx.closePath();
     ctx.fillStyle=it.c; ctx.fill();
-    ctx.strokeStyle=surf; ctx.lineWidth=Math.max(2,3*S); ctx.stroke();
+    if(!transp){ ctx.strokeStyle=surf; ctx.lineWidth=Math.max(2,3*S); ctx.stroke(); }  // transparant: geen randlijn om de segmenten
     // percentage-label
     if(ang>0.28){
       const mid=a+ang/2, lr=rInner>0? (R+rInner)/2 : R*0.62;
       ctx.fillStyle= bestInk(it.c);                                // leesbaar op ELKE segmentkleur
-      ctx.font=`800 ${Math.round(26*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.font=`800 ${Math.round(35*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="middle";
       ctx.fillText(Math.round(it.v/total*100)+"%", cx+Math.cos(mid)*lr, cy+Math.sin(mid)*lr);
     }
     a+=ang;
@@ -1121,7 +1124,7 @@ function drawPie(ctx,plot,data,C,innerRatio){
     ctx.fillText("totaal", cx, cy+Math.round(14*S));
   }
   // legenda rechts (begrensd tot wat past; rest als "+ N meer")
-  ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.font=`600 ${Math.round(27*S)}px ${F}`;
+  ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.font=`600 ${Math.round(36*S)}px ${F}`;
   const lx=plot.x+plot.w*0.66, rowH=Math.round(46*S);
   const maxRows=Math.max(1, Math.floor(plot.h/rowH));
   const overflow=items.length>maxRows;
@@ -1136,7 +1139,7 @@ function drawPie(ctx,plot,data,C,innerRatio){
     ctx.fillStyle=muted; ctx.fillText(fmtNum(it.v)+" · "+Math.round(it.v/total*100)+"%", lx+b+Math.round(12*S)+tw+Math.round(16*S), ly);
     ly+=rowH;
   });
-  if(overflow){ ctx.fillStyle=muted; ctx.font=`600 ${Math.round(24*S)}px ${F}`;
+  if(overflow){ ctx.fillStyle=muted; ctx.font=`600 ${Math.round(33*S)}px ${F}`;
     ctx.fillText("+ "+(items.length-shown.length)+" meer", lx, ly); }
   ctx.textBaseline="top";
 }
@@ -1147,11 +1150,11 @@ function drawLollipop(ctx,plot,data,C){
   const items=data.labels.map((l,i)=>({l,v:s.waarden[i]||0})).sort((a,b)=>b.v-a.v);
   const dmax=Math.max(...items.map(it=>it.v),1), dmin=Math.min(0,...items.map(it=>it.v));
   const sc=niceScale(dmin,dmax,6);
-  ctx.font=`600 ${Math.round(26*S)}px ${F}`;
+  ctx.font=`600 ${Math.round(35*S)}px ${F}`;
   let lw=0; items.forEach(it=>lw=Math.max(lw,ctx.measureText(it.l).width)); lw=Math.min(lw+20*S,plot.w*0.34);
   const p={x:plot.x+lw,y:plot.y,w:plot.w-lw,h:plot.h-Math.round(20*S)};
   const zeroX=p.x+((0-sc.min)/(sc.max-sc.min))*p.w;
-  ctx.strokeStyle=grid; ctx.lineWidth=Math.max(1,1*S); ctx.font=`500 ${Math.round(23*S)}px ${F}`;
+  ctx.strokeStyle=grid; ctx.lineWidth=Math.max(1,1*S); ctx.font=`500 ${Math.round(32*S)}px ${F}`;
   ctx.textAlign="center"; ctx.textBaseline="top";
   for(const t of sc.ticks){ const x=p.x+((t-sc.min)/(sc.max-sc.min))*p.w;
     ctx.beginPath(); ctx.moveTo(x,p.y); ctx.lineTo(x,p.y+p.h); ctx.stroke();
@@ -1162,9 +1165,9 @@ function drawLollipop(ctx,plot,data,C){
     ctx.strokeStyle=col; ctx.lineWidth=Math.max(2,3*S); ctx.lineCap="round";
     ctx.beginPath(); ctx.moveTo(zeroX,cy); ctx.lineTo(vx,cy); ctx.stroke();
     ctx.fillStyle=col; ctx.beginPath(); ctx.arc(vx,cy,Math.max(6,9*S),0,7); ctx.fill();
-    ctx.fillStyle=ink; ctx.font=`600 ${Math.round(26*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
+    ctx.fillStyle=ink; ctx.font=`600 ${Math.round(35*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
     ctx.fillText(fitLabel(ctx,it.l,lw-10*S), plot.x+lw-Math.round(14*S), cy);
-    if(state.toonWaarden){ ctx.textAlign="left"; ctx.font=`700 ${Math.round(24*S)}px ${F}`;
+    if(state.toonWaarden){ ctx.textAlign="left"; ctx.font=`700 ${Math.round(33*S)}px ${F}`;
       ctx.fillText(fmtNum(it.v), vx+Math.round(16*S), cy); }
   });
   ctx.textAlign="left"; ctx.textBaseline="top";
@@ -1382,8 +1385,9 @@ $("fotoFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return;
   im.onload=()=>{
     URL.revokeObjectURL(url);                                    // blob vrijgeven (afbeelding is al gedecodeerd)
     if(!(im.naturalWidth>0 && im.naturalHeight>0)){ alert("Kon de afmetingen van deze afbeelding niet bepalen. Gebruik een JPG of PNG."); return; }
-    state.foto={ img:im, panX:0.5, panY:0.5, zoom:1, contrast:100 };
+    state.foto={ img:im, panX:0.5, panY:0.5, zoom:1, contrast:100, transp:0 };
     state.fotoActief=true;
+    const zc=$("fotoZoom"); if(zc) zc.value=100; $("fotoContrast").value=100; $("fotoTransp").value=0;   // schuiven terug naar begin
     if(state.kleuren.tekst==="#131720") state.kleuren.tekst="#ffffff";  // op foto meestal witte tekst
     buildColorControls(); render();
   };
@@ -1392,8 +1396,9 @@ $("fotoFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return;
 };
 $("fotoZoom").oninput=e=>{ if(state.foto.img){ state.foto.zoom=(+e.target.value)/100; render(); } };
 $("fotoContrast").oninput=e=>{ if(state.foto.img){ state.foto.contrast=+e.target.value; render(); } };
+$("fotoTransp").oninput=e=>{ if(state.foto.img){ state.foto.transp=+e.target.value; render(); } };
 $("btnFotoWeg").onclick=()=>{
-  state.fotoActief=false; state.foto={ img:null, panX:0.5, panY:0.5, zoom:1, contrast:100 };
+  state.fotoActief=false; state.foto={ img:null, panX:0.5, panY:0.5, zoom:1, contrast:100, transp:0 };
   state.kleuren.achtergrond="#ffffff"; if(state.kleuren.tekst==="#ffffff") state.kleuren.tekst="#131720";
   buildColorControls(); render();
 };

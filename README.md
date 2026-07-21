@@ -48,8 +48,10 @@ een vaste link zonder iets te downloaden. Zie *Online zetten* hieronder.
   Alleen huisstijlkleuren zijn beschikbaar, dus het blijft altijd RTV Oost.
 - **Achtergrond** — een huisstijlkleur, **Transparant** (PNG met doorzichtige
   achtergrond, bijv. om zelf onder een tv-beeld te leggen) of een **foto**.
-  Bij een foto kun je 'm **verslepen** in het voorbeeld, **inzoomen/bijsnijden**
-  en het **contrast** aanpassen. Een verloop bovenaan houdt de titel leesbaar.
+  Bij een foto kun je 'm **verslepen** in het voorbeeld, **inzoomen/bijsnijden**,
+  het **contrast** aanpassen en met een schuif **transparant maken (vervagen)**
+  zodat de grafiek er goed op leesbaar blijft. Een verloop bovenaan houdt de
+  titel leesbaar.
 - **Formaat** — liggend 16:9 (1920×1080, web/tv), vierkant (1080×1080, feed) of
   verticaal (1080×1920, stories/Reels).
 - **Download PNG** of **Kopieer** naar het klembord.
