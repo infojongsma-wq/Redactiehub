@@ -130,8 +130,8 @@ waarde-labels en de datatabel standaard aan.
   PNG geëxporteerd, zodat ze scherp zijn voor druk en video.
 - Nederlandse getalnotatie (`1.200`, `35,6`) wordt herkend; de PNG toont
   getallen ook in NL-notatie.
-- **Slimme import** voor echte bestanden: Excel (`.xlsx`), CSV met puntkomma
-  en `"aanhalingstekens"`, en brede exports uit dataportalen (bijv.
+- **Slimme import** voor echte bestanden: Excel (`.xlsx`), CSV met **komma óf
+  puntkomma** en `"aanhalingstekens"`, en brede exports uit dataportalen (bijv.
   Kindermonitor/Mosaic: veel metadata-kolommen + één `Waarde`-kolom). De tool
   kiest dan zelf de juiste label- en waardekolom, kort lange labels in
   (`… (0-3), 0 jaar` → `0 jaar`) en vult *Titel*/*Bron* alvast in. Excel-

@@ -214,43 +214,8 @@
       <button class="btn primary big" id="btnGen">Genereren ▸</button>
     </div>
 
-  </div>
-
-  <!-- ===================== RECHTERKOLOM: PREVIEW + BEWERKEN ===================== -->
-  <div class="col-right">
-
-    <div class="card preview-card">
-      <h2>Voorbeeld</h2>
-      <div class="previewwrap">
-        <div id="empty" class="empty">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="7"/><rect x="12" y="7" width="3" height="11"/><rect x="17" y="13" width="3" height="5"/></svg>
-          <div>Vul data in en klik op <b>Genereren</b>.</div>
-        </div>
-        <canvas id="preview" class="hidden" width="1920" height="1080"></canvas>
-      </div>
-      <div id="downloadbar" class="hidden" style="margin-top:12px">
-        <div class="lbl" style="font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:4px">Formaat</div>
-        <div class="sizes" id="sizes"></div>
-        <div class="btnrow" style="margin-top:10px">
-          <button class="btn primary" id="btnPng" style="flex:1">⬇ Download PNG</button>
-          <button class="btn" id="btnCopy">📋 Kopieer</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card hidden" id="editcard">
-      <h2>Data aanpassen</h2>
-      <p class="hint" style="margin-top:0">Dit zijn de verwerkte cijfers. Pas ze aan en klik op <b>Grafiek bijwerken</b>.</p>
-      <div style="overflow-x:auto"><table class="data" id="datatable"></table></div>
-      <div class="btnrow" style="margin-top:10px">
-        <button class="btn" id="btnAddRow">+ Rij</button>
-        <button class="btn" id="btnAddSeries">+ Reeks</button>
-        <button class="btn primary" id="btnUpdate" style="margin-left:auto">Grafiek bijwerken</button>
-      </div>
-    </div>
-
     <div class="card hidden" id="colorcard">
-      <h2>Kleuren (huisstijl)</h2>
+      <h2><span class="step">4</span> Pas de kleuren aan</h2>
       <div class="colgrp">
         <div class="lbl">Achtergrond</div>
         <div class="swatchrow" id="bgSwatches"></div>
@@ -275,6 +240,44 @@
         <div id="seriesColors"></div>
       </div>
       <label class="toggle"><input type="checkbox" id="showValues" checked> Waarden tonen in de grafiek</label>
+    </div>
+
+    <div class="card hidden" id="formatcard">
+      <h2><span class="step">5</span> Pas het formaat aan</h2>
+      <div class="sizes" id="sizes"></div>
+    </div>
+
+  </div>
+
+  <!-- ===================== RECHTERKOLOM: PREVIEW + BEWERKEN ===================== -->
+  <div class="col-right">
+
+    <div class="card preview-card">
+      <h2>Voorbeeld</h2>
+      <div class="previewwrap">
+        <div id="empty" class="empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="7"/><rect x="12" y="7" width="3" height="11"/><rect x="17" y="13" width="3" height="5"/></svg>
+          <div>Vul data in en klik op <b>Genereren</b>.</div>
+        </div>
+        <canvas id="preview" class="hidden" width="1920" height="1080"></canvas>
+      </div>
+      <div id="downloadbar" class="hidden" style="margin-top:12px">
+        <div class="btnrow">
+          <button class="btn primary" id="btnPng" style="flex:1">⬇ Download PNG</button>
+          <button class="btn" id="btnCopy">📋 Kopieer</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="editcard">
+      <h2>Data aanpassen</h2>
+      <p class="hint" style="margin-top:0">Dit zijn de verwerkte cijfers. Pas ze aan en klik op <b>Grafiek bijwerken</b>.</p>
+      <div style="overflow-x:auto"><table class="data" id="datatable"></table></div>
+      <div class="btnrow" style="margin-top:10px">
+        <button class="btn" id="btnAddRow">+ Rij</button>
+        <button class="btn" id="btnAddSeries">+ Reeks</button>
+        <button class="btn primary" id="btnUpdate" style="margin-left:auto">Grafiek bijwerken</button>
+      </div>
     </div>
 
   </div>
@@ -404,7 +407,18 @@ function fmtNum(n){
 function detectDelim(text){
   if(text.includes("\t")) return "\t";
   if(text.includes(";"))  return ";";
-  return null; // komma is riskant (decimaalteken) -> alleen als tabel expliciet
+  // komma: alleen als het duidelijk een tabel is — niet de Nederlandse decimaal-komma (35,6)
+  const lines=text.replace(/\r/g,"").split("\n").filter(l=>l.trim()).slice(0,25);
+  if(lines.length>=2){
+    const counts=lines.map(l=>{ const r=parseDelimited(l,","); return r.length? r[0].length : 1; });
+    const freq={}; counts.forEach(c=>{ freq[c]=(freq[c]||0)+1; });
+    let modal=1, mN=0; for(const k in freq){ if(freq[k]>mN){ mN=freq[k]; modal=+k; } }
+    const consistent = modal>=2 && mN>=Math.ceil(lines.length*0.8);   // meeste rijen zelfde aantal kolommen
+    const quoted = lines.filter(l=>/^\s*"/.test(l)).length >= Math.ceil(lines.length*0.6);
+    const decimaalKomma = lines.some(l=>/\d,\d/.test(l));             // 35,6 -> geen scheidingsteken
+    if(consistent && (quoted || !decimaalKomma)) return ",";
+  }
+  return null; // anders: paren-modus / tekst
 }
 /* robuuste CSV/TSV-splitser: respecteert "quotes", ""->" en scheidingstekens/regeleindes binnen quotes */
 function parseDelimited(text, delim){
@@ -1278,7 +1292,8 @@ function buildColorControls(){
     const nm=document.createElement("span"); nm.className="nm"; nm.textContent=r.nm; row.appendChild(nm);
     const sr=document.createElement("div"); sr.className="swatchrow";
     const current=catColor(r.idx);
-    HUISSTIJL.palet.forEach(c=>sr.appendChild(swatch(c.hex,c.naam, current===c.hex, ()=>{
+    const paletMetWit=[...HUISSTIJL.palet, {hex:"#ffffff", naam:"Wit"}];   // wit erbij (mooi op blauwe/donkere achtergrond)
+    paletMetWit.forEach(c=>sr.appendChild(swatch(c.hex,c.naam, current===c.hex, ()=>{
       state.kleuren.reeks[r.idx]=c.hex; buildColorControls(); render();
     })));
     row.appendChild(sr); grp.appendChild(row);
@@ -1341,7 +1356,7 @@ function showData(p){
   state.kleuren.reeks=p.series.map((_,i)=> vorige[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
   state.gegenereerd=true;
   $("empty").classList.add("hidden");
-  ["preview","downloadbar","editcard","colorcard"].forEach(x=>$(x).classList.remove("hidden"));
+  ["preview","downloadbar","editcard","colorcard","formatcard"].forEach(x=>$(x).classList.remove("hidden"));
   buildDataTable(); buildColorControls(); buildSizeButtons(); render();
 }
 
