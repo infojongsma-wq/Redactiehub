@@ -194,8 +194,24 @@
         <button class="btn" id="btnText">🔍 Cijfers uit tekst halen</button>
         <button class="btn ghost" id="btnSample">Voorbeeld</button>
       </div>
+      <div class="btnrow" style="margin-top:8px">
+        <button class="btn primary" id="btnAI">✨ Met AI ophalen (Claude)</button>
+        <button class="btn ghost" id="btnAISettings" title="AI-instellingen">⚙︎</button>
+      </div>
       <input type="file" id="file" accept=".csv,.tsv,.txt" class="hidden">
-      <p class="hint">Werkt met tab, puntkomma (;) of komma. Kopiëren uit Excel plakt automatisch goed. Nederlandse getallen (35,6 en 1.200) worden herkend.</p>
+      <p class="hint">Werkt met tab, puntkomma (;) of komma. Kopiëren uit Excel plakt automatisch goed. Nederlandse getallen (35,6 en 1.200) worden herkend. <b>Met AI</b> haalt ook uit rommelige tekst/tabellen de juiste cijfers.</p>
+
+      <div id="aiSettings" class="hidden" style="margin-top:8px;border-top:1px solid var(--lijn);padding-top:10px">
+        <label class="fld" for="aiKey">Anthropic API-sleutel</label>
+        <input type="password" id="aiKey" placeholder="sk-ant-..." autocomplete="off">
+        <label class="fld" for="aiModel">Model</label>
+        <select id="aiModel" style="width:100%;font-family:var(--font);font-size:14px;border:1px solid var(--lijn);border-radius:10px;padding:9px 11px;background:#fff">
+          <option value="claude-haiku-4-5">Haiku 4.5 — snel &amp; goedkoop (aanrader)</option>
+          <option value="claude-sonnet-5">Sonnet 5 — slimmer, iets duurder</option>
+          <option value="claude-opus-4-8">Opus 4.8 — het slimst, het duurst</option>
+        </select>
+        <p class="hint" style="margin-top:8px">De sleutel wordt <b>alleen lokaal in je browser</b> bewaard. Je data gaat versleuteld (HTTPS) naar Anthropic — gebruik dit voor publieke data. Sleutel maken op <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> (apart account met facturatie; niet je Claude-abonnement).</p>
+      </div>
     </div>
 
     <div class="card">
@@ -1146,6 +1162,79 @@ async function copyPng(){
 }
 function flash(btn,txt){ const o=btn.textContent; btn.textContent=txt; setTimeout(()=>btn.textContent=o,1400); }
 
+/* toon verwerkte data + bouw alle bedieningen (gedeeld door tekst- en AI-extractie) */
+function showData(p){
+  const vorige=state.kleuren.reeks||[];
+  state.data=p;
+  state.kleuren.reeks=p.series.map((_,i)=> vorige[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
+  state.gegenereerd=true;
+  $("empty").classList.add("hidden");
+  ["preview","downloadbar","editcard","colorcard"].forEach(x=>$(x).classList.remove("hidden"));
+  buildDataTable(); buildColorControls(); buildSizeButtons(); render();
+}
+
+/* ============================================================================
+   8. AI-EXTRACTIE (optioneel) — Anthropic API, eigen sleutel, HTTPS.
+   De tool werkt volledig zonder dit; dit is een hulp voor rommelige invoer.
+   ========================================================================== */
+const AI = { endpoint:"https://api.anthropic.com/v1/messages", version:"2023-06-01", maxTokens:2048 };
+const AI_SCHEMA = {
+  type:"object", additionalProperties:false, required:["labels","reeksen"],
+  properties:{
+    labels:{ type:"array", items:{ type:"string" } },
+    reeksen:{ type:"array", items:{
+      type:"object", additionalProperties:false, required:["naam","waarden"],
+      properties:{ naam:{ type:"string" }, waarden:{ type:"array", items:{ type:"number" } } }
+    } }
+  }
+};
+function aiKey(){ return ($("aiKey").value||"").trim(); }
+function aiModel(){ return $("aiModel").value || "claude-haiku-4-5"; }
+
+async function aiExtract(){
+  const raw=$("raw").value.trim();
+  if(!raw){ alert("Plak eerst data of tekst."); return; }
+  if(!aiKey()){ $("aiSettings").classList.remove("hidden"); $("aiKey").focus();
+    alert("Vul eerst je Anthropic API-sleutel in (⚙︎-knop)."); return; }
+  const btn=$("btnAI"), orig=btn.textContent; btn.disabled=true; btn.textContent="Bezig met AI…";
+  try{
+    const body={
+      model: aiModel(), max_tokens: AI.maxTokens,
+      output_config:{ format:{ type:"json_schema", schema: AI_SCHEMA } },
+      messages:[{ role:"user", content:
+        "Haal uit de volgende data of tekst de cijfers voor een grafiek. Geef de x-as labels en één of meer reeksen "+
+        "(elke kolom = een reeks) met exact de genoemde getallen. Interpreteer Nederlandse getalnotatie goed "+
+        "(35,6 betekent 35.6; 1.200 betekent 1200). Verzin geen cijfers; laat weg wat je niet zeker weet.\n\n---\n"+raw }]
+    };
+    const res=await fetch(AI.endpoint,{ method:"POST",
+      headers:{ "content-type":"application/json", "x-api-key":aiKey(),
+        "anthropic-version":AI.version, "anthropic-dangerous-direct-browser-access":"true" },
+      body: JSON.stringify(body) });
+    if(!res.ok){
+      let msg="AI-aanroep mislukt (HTTP "+res.status+").";
+      if(res.status===401) msg="API-sleutel ongeldig. Controleer je sleutel (⚙︎-knop).";
+      else if(res.status===429) msg="Limiet of tegoed bereikt. Controleer je Anthropic-account.";
+      else if(res.status===403) msg="Geen toegang. Heeft je sleutel rechten voor dit model?";
+      else if(res.status===400) msg="Verzoek geweigerd (400). Probeer een ander model of minder data.";
+      try{ const e=await res.json(); if(e&&e.error&&e.error.message) msg+="\n\n"+e.error.message; }catch(_){}
+      alert(msg); return;
+    }
+    const data=await res.json();
+    if(data.stop_reason==="refusal"){ alert("De AI heeft dit verzoek geweigerd. Probeer andere invoer."); return; }
+    const txt=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
+    let parsed; try{ parsed=JSON.parse(txt); }catch(_){ alert("AI gaf geen bruikbaar antwoord. Probeer opnieuw."); return; }
+    const labels=Array.isArray(parsed.labels)? parsed.labels.map(String):[];
+    let series=(Array.isArray(parsed.reeksen)?parsed.reeksen:[])
+      .filter(s=>s&&Array.isArray(s.waarden))
+      .map((s,i)=>({ naam:(s.naam||("Reeks "+(i+1))),
+        waarden: labels.map((_,k)=>{ const v=Number(s.waarden[k]); return isFinite(v)?v:null; }) }));
+    if(!labels.length||!series.length){ alert("De AI vond geen cijfers. Controleer de invoer."); return; }
+    showData({ labels, series });
+  }catch(err){
+    alert("Geen verbinding met de AI. Controleer je internet (mogelijk blokkeert je netwerk de Anthropic API).");
+  }finally{ btn.disabled=false; btn.textContent=orig; }
+}
+
 /* ---- event listeners ---- */
 $("btnGen").onclick=generate;
 $("btnUpdate").onclick=()=>{ buildColorControls(); render(); };
@@ -1159,13 +1248,14 @@ $("btnAddSeries").onclick=()=>{ const j=state.data.series.length;
   buildDataTable(); buildColorControls(); };
 $("btnText").onclick=()=>{ const p=extractFromText($("raw").value);
   if(!p.labels.length){ alert("Geen cijfers gevonden in de tekst."); return; }
-  const vorige=state.kleuren.reeks||[]; state.data=p;
-  state.kleuren.reeks=p.series.map((_,i)=> vorige[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
-  state.gegenereerd=true;
-  ["empty"].forEach(x=>$(x).classList.add("hidden"));
-  ["preview","downloadbar","editcard","colorcard"].forEach(x=>$(x).classList.remove("hidden"));
-  buildDataTable(); buildColorControls(); buildSizeButtons(); render();
+  showData(p);
 };
+$("btnAI").onclick=aiExtract;
+$("btnAISettings").onclick=()=>$("aiSettings").classList.toggle("hidden");
+try{ const k=localStorage.getItem("rh_ai_key"); if(k) $("aiKey").value=k;
+     const m=localStorage.getItem("rh_ai_model"); if(m) $("aiModel").value=m; }catch(_){}
+$("aiKey").oninput=e=>{ try{ localStorage.setItem("rh_ai_key", e.target.value.trim()); }catch(_){} };
+$("aiModel").onchange=e=>{ try{ localStorage.setItem("rh_ai_model", e.target.value); }catch(_){} };
 $("btnFile").onclick=()=>$("file").click();
 $("file").onchange=e=>{ const f=e.target.files[0]; if(!f) return;
   const r=new FileReader(); r.onload=()=>{ $("raw").value=r.result; }; r.readAsText(f,"utf-8"); };
