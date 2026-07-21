@@ -110,7 +110,21 @@
 
   /* preview */
   .previewwrap{position:relative;background:var(--vlak);border-radius:12px;padding:14px;border:1px solid var(--lijn)}
+  .previewwrap.transp{
+    background-color:#eef1f5;
+    background-image:linear-gradient(45deg,#d7dde5 25%,transparent 25%,transparent 75%,#d7dde5 75%),
+                     linear-gradient(45deg,#d7dde5 25%,transparent 25%,transparent 75%,#d7dde5 75%);
+    background-size:24px 24px;background-position:0 0,12px 12px;
+  }
   #preview{width:100%;height:auto;display:block;border-radius:8px;box-shadow:0 2px 14px rgba(11,27,51,.08)}
+  #preview.fotomode{cursor:grab}
+  #preview.dragging{cursor:grabbing}
+  .swatch.swatch-transparant{
+    background-color:#fff;
+    background-image:linear-gradient(45deg,#c2cad6 25%,transparent 25%,transparent 75%,#c2cad6 75%),
+                     linear-gradient(45deg,#c2cad6 25%,transparent 25%,transparent 75%,#c2cad6 75%);
+    background-size:10px 10px;background-position:0 0,5px 5px;
+  }
   .empty{padding:60px 20px;text-align:center;color:var(--ink-2)}
   .empty svg{width:64px;height:64px;opacity:.35;margin-bottom:10px}
 
@@ -229,6 +243,15 @@
       <div class="colgrp">
         <div class="lbl">Achtergrond</div>
         <div class="swatchrow" id="bgSwatches"></div>
+        <input type="file" id="fotoFile" accept="image/*" class="hidden">
+        <div id="fotoControls" class="hidden">
+          <div class="hint" style="margin:8px 0 6px">Sleep de foto in het voorbeeld om te verplaatsen.</div>
+          <label class="fld" style="margin:6px 0 2px">Inzoomen / bijsnijden</label>
+          <input type="range" id="fotoZoom" min="100" max="300" value="100" style="width:100%">
+          <label class="fld" style="margin:8px 0 2px">Contrast</label>
+          <input type="range" id="fotoContrast" min="50" max="160" value="100" style="width:100%">
+          <button class="btn" id="btnFotoWeg" style="margin-top:8px;padding:6px 12px;font-size:13px">Foto verwijderen</button>
+        </div>
       </div>
       <div class="colgrp">
         <div class="lbl">Tekstkleur</div>
@@ -316,10 +339,12 @@ const state = {
   data: { labels:[], series:[] },   // series: [{naam, waarden:[]}]
   formaat: { w:1920, h:1080, id:"web" },
   kleuren: {
-    achtergrond: "#ffffff",
+    achtergrond: "#ffffff",   // hex, of "transparant"
     tekst: "#131720",
     reeks: HUISSTIJL.reeksVolgorde.slice(),
   },
+  fotoActief: false,
+  foto: { img:null, dx:0, dy:0, zoom:1, contrast:100 },
   toonWaarden: true,
   gegenereerd: false,
 };
@@ -485,8 +510,15 @@ function catColor(i){ return state.kleuren.reeks[i] || HUISSTIJL.reeksVolgorde[i
 function contrastRatio(a,b){ const L1=relLum(a),L2=relLum(b),hi=Math.max(L1,L2),lo=Math.min(L1,L2); return (hi+0.05)/(lo+0.05); }
 // leesbare inkt (donker of wit) tegen achtergrond bg — voor labels ín een gekleurd vlak
 function bestInk(bg){ return contrastRatio("#131720",bg) >= contrastRatio("#ffffff",bg) ? "#131720" : "#ffffff"; }
-// markeringkleur die zichtbaar blijft: val terug op tekstkleur als de reekskleur te weinig contrast met de achtergrond heeft
-function markColor(col){ return contrastRatio(col, state.kleuren.achtergrond) < 3 ? state.kleuren.tekst : col; }
+// effectieve, ondoorzichtige "ondergrond"-kleur voor contrast-/randberekeningen
+// (bij transparant of foto bestaat er geen echte kleur -> leid af uit de tekstkleur)
+function currentSurface(){
+  const bg=state.kleuren.achtergrond;
+  if((state.fotoActief && state.foto.img) || bg==="transparant") return isDark(state.kleuren.tekst) ? "#ffffff" : "#131720";
+  return bg;
+}
+// markeringkleur die zichtbaar blijft: val terug op tekstkleur als de reekskleur te weinig contrast met de ondergrond heeft
+function markColor(col){ return contrastRatio(col, currentSurface()) < 3 ? state.kleuren.tekst : col; }
 function niceScale(min,max,ticks){
   if(min===max){ max = min+1; }
   const range = niceNum(max-min,false);
@@ -532,17 +564,24 @@ function render(){
   const ctx=canvas.getContext("2d");
 
   const bg=state.kleuren.achtergrond;
-  const darkBg=isDark(bg);
+  const foto  = !!(state.fotoActief && state.foto.img);
+  const transp = !foto && bg==="transparant";
+  // bij foto/transparant bepaalt de gekozen tekstkleur of assen/labels licht of donker zijn
+  const darkBg = (foto||transp) ? !isDark(state.kleuren.tekst) : isDark(bg);
   let ink=state.kleuren.tekst;
-  if(contrastRatio(ink,bg) < 3) ink = darkBg ? "#ffffff" : "#131720";   // vangnet: nooit onleesbare tekst
-  const muted = darkBg? "rgba(255,255,255,.62)" : "#616d80";            // #616d80 haalt AA (>=4.5:1) op wit én lichtgrijs
-  const grid  = darkBg? "rgba(255,255,255,.14)" : "#e6e9f0";
-  const axis  = darkBg? "rgba(255,255,255,.35)" : "#c7d0de";
+  if(!foto && !transp && contrastRatio(ink,bg) < 3) ink = darkBg ? "#ffffff" : "#131720";  // vangnet in kleurmodus
+  const muted = darkBg? "rgba(255,255,255,.72)" : "#616d80";
+  const grid  = darkBg? "rgba(255,255,255,.16)" : "#e6e9f0";
+  const axis  = darkBg? "rgba(255,255,255,.40)" : "#c7d0de";
   const F=HUISSTIJL.fontFamily;
   const S=Math.min(w,h)/1080;           // schaal op de KLEINSTE dimensie -> geen opgeblazen tekst bij verticaal
 
   ctx.clearRect(0,0,w,h);
-  ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
+  if(foto){ drawFotoBg(ctx,w,h); drawFotoScrim(ctx,w,h,darkBg); }   // foto + leesbaarheids-verloop
+  else if(!transp){ ctx.fillStyle=bg; ctx.fillRect(0,0,w,h); }      // gewone kleur
+  // transparant: canvas blijft doorzichtig (PNG met alpha)
+  const pw=document.querySelector(".previewwrap"); if(pw) pw.classList.toggle("transp", transp);
+  canvas.classList.toggle("fotomode", foto);
 
   // ---- kopregel ----
   const padX=Math.round(w*0.055), padTop=Math.round(64*S);
@@ -568,7 +607,6 @@ function render(){
   const bron=document.getElementById("bron").value.trim();
   ctx.font=`500 ${Math.round(25*S)}px ${F}`; ctx.fillStyle=muted; ctx.textBaseline="alphabetic";
   if(bron) ctx.fillText("Bron: "+bron, padX, footY+Math.round(18*S));
-  drawLogo(ctx, w-padX, footY, S, ink, darkBg);
   // scheidingslijn boven de voet
   ctx.strokeStyle=grid; ctx.lineWidth=Math.max(1,1*S);
   ctx.beginPath(); ctx.moveTo(padX,footY-Math.round(16*S)); ctx.lineTo(w-padX,footY-Math.round(16*S)); ctx.stroke();
@@ -603,24 +641,28 @@ function render(){
   }
 }
 
-/* RTV Oost-woordmerk "oost" — Roobert SemiBold met de huisstijl-kerning.
-   Kleurregel: blauw logo op lichte achtergrond, wit logo op blauwe/donkere
-   achtergrond (conform de huisstijl-varianten). */
-const LOGO_KERNING = { oo:-0.50, os:-0.45, st:-0.70 };   // huisstijl-kerning per letterpaar
-const LOGO_KERN_BASE = 0.16;                             // tracking-eenheid (fractie van de fontgrootte)
-function drawLogo(ctx,xRight,yBase,S,ink,darkBg){
-  const fs=Math.round(44*S);
+/* Foto als achtergrond: cover-fit + slepen (dx/dy), zoom = bijsnijden, contrast-filter. */
+function drawFotoBg(ctx,w,h){
+  const f=state.foto, img=f.img;
+  const cover=Math.max(w/img.naturalWidth, h/img.naturalHeight)*f.zoom;
+  const sw=img.naturalWidth*cover, sh=img.naturalHeight*cover;
+  let x=(w-sw)/2+f.dx, y=(h-sh)/2+f.dy;
+  x=Math.min(0, Math.max(w-sw, x));       // foto blijft altijd beelddekkend
+  y=Math.min(0, Math.max(h-sh, y));
   ctx.save();
-  ctx.font=`600 ${fs}px Roobert, ${HUISSTIJL.fontFamily}`;   // Roobert SemiBold (logo-gewicht)
-  ctx.textAlign="left"; ctx.textBaseline="alphabetic";
-  ctx.fillStyle = darkBg ? "#ffffff" : "#1361ff";           // wit op donker/blauw · blauw op licht
-  const letters=["o","o","s","t"];
-  const w=letters.map(l=>ctx.measureText(l).width);
-  const gaps=[LOGO_KERNING.oo,LOGO_KERNING.os,LOGO_KERNING.st].map(k=>k*LOGO_KERN_BASE*fs);
-  const total=w.reduce((a,b)=>a+b,0)+gaps.reduce((a,b)=>a+b,0);
-  let x=xRight-total; const y=yBase+Math.round(16*S);
-  for(let i=0;i<letters.length;i++){ ctx.fillText(letters[i],x,y); x+=w[i]+(gaps[i]||0); }
+  ctx.filter=`contrast(${f.contrast}%)`;
+  ctx.drawImage(img, x, y, sw, sh);
   ctx.restore();
+}
+// subtiel verloop boven (titel) en onder (bron) zodat tekst leesbaar blijft op een foto
+function drawFotoScrim(ctx,w,h,darkBg){
+  const c = darkBg ? "0,0,0" : "255,255,255";
+  const gTop=ctx.createLinearGradient(0,0,0,h*0.42);
+  gTop.addColorStop(0,`rgba(${c},0.45)`); gTop.addColorStop(1,`rgba(${c},0)`);
+  ctx.fillStyle=gTop; ctx.fillRect(0,0,w,h*0.42);
+  const gBot=ctx.createLinearGradient(0,h*0.80,0,h);
+  gBot.addColorStop(0,`rgba(${c},0)`); gBot.addColorStop(1,`rgba(${c},0.45)`);
+  ctx.fillStyle=gBot; ctx.fillRect(0,h*0.80,w,h*0.20);
 }
 
 function drawLegend(ctx,plot,S,F,ink){
@@ -813,7 +855,7 @@ function drawLine(ctx,plot,data,C,area){
     // markers + waarde-labels
     pts.forEach((pt,i)=>{
       if(!pt) return;
-      ctx.fillStyle=state.kleuren.achtergrond; ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(5,6*S),0,7); ctx.fill();
+      ctx.fillStyle=currentSurface(); ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(5,6*S),0,7); ctx.fill();
       ctx.fillStyle=col; ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(3.5,4.5*S),0,7); ctx.fill();
       if(state.toonWaarden && ns<=2 && nl<=14){
         const above = j%2===0;                      // reeksen wijken boven/onder uit -> geen overlap
@@ -845,23 +887,30 @@ function drawPie(ctx,plot,data,C,innerRatio){
   }
   const total=items.reduce((a,it)=>a+it.v,0)||1;
   const cx=plot.x+plot.w*0.34, cy=plot.y+plot.h/2, R=Math.min(plot.w*0.30,plot.h*0.42);
+  const rInner = innerRatio>0 ? R*innerRatio : 0;
+  const surf = currentSurface();
   let a=-Math.PI/2;
   items.forEach(it=>{
     const ang=it.v/total*Math.PI*2;
-    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,R,a,a+ang); ctx.closePath();
+    ctx.beginPath();
+    if(rInner>0){                                   // donut: ring-segment -> echte holte (foto/transparant zichtbaar)
+      ctx.arc(cx,cy,R,a,a+ang); ctx.arc(cx,cy,rInner,a+ang,a,true);
+    } else {                                        // taart: volledige punt
+      ctx.moveTo(cx,cy); ctx.arc(cx,cy,R,a,a+ang);
+    }
+    ctx.closePath();
     ctx.fillStyle=it.c; ctx.fill();
-    ctx.strokeStyle=state.kleuren.achtergrond; ctx.lineWidth=Math.max(2,3*S); ctx.stroke();
+    ctx.strokeStyle=surf; ctx.lineWidth=Math.max(2,3*S); ctx.stroke();
     // percentage-label
     if(ang>0.28){
-      const mid=a+ang/2, lr=innerRatio>0? R*(1+innerRatio)/2 : R*0.62;
+      const mid=a+ang/2, lr=rInner>0? (R+rInner)/2 : R*0.62;
       ctx.fillStyle= bestInk(it.c);                                // leesbaar op ELKE segmentkleur
       ctx.font=`800 ${Math.round(26*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="middle";
       ctx.fillText(Math.round(it.v/total*100)+"%", cx+Math.cos(mid)*lr, cy+Math.sin(mid)*lr);
     }
     a+=ang;
   });
-  if(innerRatio>0){
-    ctx.fillStyle=state.kleuren.achtergrond; ctx.beginPath(); ctx.arc(cx,cy,R*innerRatio,0,7); ctx.fill();
+  if(rInner>0){                                     // totaal in de doorzichtige holte
     ctx.fillStyle=ink; ctx.textAlign="center";
     ctx.font=`800 ${Math.round(46*S)}px ${F}`; ctx.textBaseline="alphabetic";
     ctx.fillText(fmtNum(total), cx, cy+Math.round(6*S));
@@ -981,15 +1030,29 @@ function onTableEdit(e){
 function escapeAttr(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
 
 function buildColorControls(){
-  // achtergrond
+  // achtergrond: huisstijlkleuren + transparant + foto
   const bg=$("bgSwatches"); bg.innerHTML="";
-  HUISSTIJL.achtergronden.forEach(c=>bg.appendChild(swatch(c.hex,c.naam, state.kleuren.achtergrond===c.hex, ()=>{
-    state.kleuren.achtergrond=c.hex;
-    // automatische leesbare tekstkleur bij donkere achtergrond
-    if(isDark(c.hex) && state.kleuren.tekst==="#131720") state.kleuren.tekst="#ffffff";
-    if(!isDark(c.hex) && state.kleuren.tekst==="#ffffff") state.kleuren.tekst="#131720";
+  const kiesBg=(hex)=>{
+    state.fotoActief=false; state.kleuren.achtergrond=hex;
+    if(hex!=="transparant"){                                   // automatische leesbare tekstkleur
+      if(isDark(hex) && state.kleuren.tekst==="#131720") state.kleuren.tekst="#ffffff";
+      if(!isDark(hex) && state.kleuren.tekst==="#ffffff") state.kleuren.tekst="#131720";
+    }
     buildColorControls(); render();
-  })));
+  };
+  HUISSTIJL.achtergronden.forEach(c=>bg.appendChild(
+    swatch(c.hex,c.naam, !state.fotoActief && state.kleuren.achtergrond===c.hex, ()=>kiesBg(c.hex))));
+  const tr=swatch("#ffffff","Transparant", !state.fotoActief && state.kleuren.achtergrond==="transparant", ()=>kiesBg("transparant"));
+  tr.classList.add("swatch-transparant"); bg.appendChild(tr);
+  const fb=document.createElement("button"); fb.className="btn"; fb.textContent="📷 Foto…";
+  fb.style.cssText="padding:3px 10px;font-size:12px;height:26px";
+  fb.onclick=()=>$("fotoFile").click(); bg.appendChild(fb);
+  // foto-bewerkpaneel
+  const fc=$("fotoControls");
+  if(state.fotoActief && state.foto.img){
+    fc.classList.remove("hidden");
+    $("fotoZoom").value=Math.round(state.foto.zoom*100); $("fotoContrast").value=state.foto.contrast;
+  } else fc.classList.add("hidden");
   // tekst
   const tx=$("textSwatches"); tx.innerHTML="";
   HUISSTIJL.teksten.forEach(c=>tx.appendChild(swatch(c.hex,c.naam, state.kleuren.tekst===c.hex, ()=>{
@@ -1091,6 +1154,38 @@ $("btnText").onclick=()=>{ const p=extractFromText($("raw").value);
 $("btnFile").onclick=()=>$("file").click();
 $("file").onchange=e=>{ const f=e.target.files[0]; if(!f) return;
   const r=new FileReader(); r.onload=()=>{ $("raw").value=r.result; }; r.readAsText(f,"utf-8"); };
+
+/* ---- foto als achtergrond ---- */
+$("fotoFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return;
+  const im=new Image();
+  im.onload=()=>{
+    state.foto={ img:im, dx:0, dy:0, zoom:1, contrast:100 };
+    state.fotoActief=true;
+    if(state.kleuren.tekst==="#131720") state.kleuren.tekst="#ffffff";  // op foto meestal witte tekst
+    buildColorControls(); render();
+  };
+  im.onerror=()=>alert("Kon deze afbeelding niet laden.");
+  im.src=URL.createObjectURL(f); e.target.value="";
+};
+$("fotoZoom").oninput=e=>{ if(state.foto.img){ state.foto.zoom=(+e.target.value)/100; render(); } };
+$("fotoContrast").oninput=e=>{ if(state.foto.img){ state.foto.contrast=+e.target.value; render(); } };
+$("btnFotoWeg").onclick=()=>{
+  state.fotoActief=false; state.foto={ img:null, dx:0, dy:0, zoom:1, contrast:100 };
+  state.kleuren.achtergrond="#ffffff"; if(state.kleuren.tekst==="#ffffff") state.kleuren.tekst="#131720";
+  buildColorControls(); render();
+};
+// slepen om de foto te verplaatsen
+(function(){
+  const cv=$("preview"); let drag=false, lx=0, ly=0;
+  const factor=()=> cv.width / (cv.getBoundingClientRect().width||cv.width);
+  cv.addEventListener("pointerdown",e=>{ if(!(state.fotoActief&&state.foto.img)) return;
+    drag=true; lx=e.clientX; ly=e.clientY; cv.classList.add("dragging");
+    try{ cv.setPointerCapture(e.pointerId); }catch(_){} });
+  cv.addEventListener("pointermove",e=>{ if(!drag) return; const s=factor();
+    state.foto.dx+=(e.clientX-lx)*s; state.foto.dy+=(e.clientY-ly)*s; lx=e.clientX; ly=e.clientY; render(); });
+  const stop=()=>{ drag=false; cv.classList.remove("dragging"); };
+  cv.addEventListener("pointerup",stop); cv.addEventListener("pointercancel",stop);
+})();
 $("btnSample").onclick=()=>{ $("raw").value="Regio\tMeldingen\nTwente\t352\nIJsselland\t561\nVechtdal\t284\nSalland\t198\nNoordoost\t147";
   $("titel").value="Meeste meldingen in IJsselland"; $("ondertitel").value="Aantal meldingen per regio, 2025"; $("bron").value="Provincie Overijssel"; };
 

@@ -44,9 +44,12 @@ een vaste link zonder iets te downloaden. Zie *Online zetten* hieronder.
 
 - **Data aanpassen** — de verwerkte cijfers staan in een tabel. Pas een waarde
   aan en klik **Grafiek bijwerken**. Je kunt rijen en reeksen toevoegen.
-- **Kleuren (huisstijl)** — kies achtergrond, tekstkleur en de kleur per
-  reeks/segment. Alleen huisstijlkleuren zijn beschikbaar, dus het blijft altijd
-  "Oost".
+- **Kleuren (huisstijl)** — kies tekstkleur en de kleur per reeks/segment.
+  Alleen huisstijlkleuren zijn beschikbaar, dus het blijft altijd RTV Oost.
+- **Achtergrond** — een huisstijlkleur, **Transparant** (PNG met doorzichtige
+  achtergrond, bijv. om zelf onder een tv-beeld te leggen) of een **foto**.
+  Bij een foto kun je 'm **verslepen** in het voorbeeld, **inzoomen/bijsnijden**
+  en het **contrast** aanpassen. Een verloop bovenaan houdt de titel leesbaar.
 - **Formaat** — liggend 16:9 (1920×1080, web/tv), vierkant (1080×1080, feed) of
   verticaal (1080×1920, stories/Reels).
 - **Download PNG** of **Kopieer** naar het klembord.
@@ -101,13 +104,10 @@ waarde-labels en de datatabel standaard aan.
 
 - **Lettertype:** de tool gebruikt **Roobert** (staat op de redactie-computers);
   op een computer zonder Roobert valt hij netjes terug op een systeemletter.
-- **Logo:** rechtsonder staat het RTV Oost-woordmerk **"oost"**, getekend in
-  Roobert SemiBold met de huisstijl-kerning. Het kleurt automatisch mee volgens
-  de huisstijl-regels: **blauw op een lichte achtergrond, wit op een blauwe of
-  donkere achtergrond**. De kerning staat in `LOGO_KERNING`/`LOGO_KERN_BASE`
-  bovenaan de tekenfunctie. (Voor het exacte woordmerk is Roobert nodig.)
+- **Logo:** de grafieken bevatten bewust **geen** logo (naar keuze van de
+  redactie), zodat je de PNG vrij kunt plaatsen.
 - **Merknaam in tekst:** schrijf de naam in geschreven tekst voluit als
-  **RTV Oost**; het kleine "oost" is uitsluitend het grafische logo.
+  **RTV Oost**.
 
 ---
 
