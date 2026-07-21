@@ -57,6 +57,20 @@
     max-width:1600px;margin:0 auto;
     align-items:start;
   }
+  /* Gesplitst scrollen (desktop): pagina staat vast; linkerkolom scrolt los,
+     het voorbeeld blijft in beeld en "Data aanpassen" krijgt een eigen scrollbalk. */
+  @media(min-width:921px){
+    html,body{height:100%;overflow:hidden}
+    body{display:flex;flex-direction:column}
+    header.app{flex:none}
+    .wrap{flex:1;min-height:0;width:100%;overflow:hidden;align-items:stretch}
+    .col-left{overflow-y:auto;min-height:0;padding-right:4px;overscroll-behavior:contain}
+    .col-right{overflow:hidden;min-height:0}
+    .col-right .preview-card{flex:none}
+    #editcard:not(.hidden){flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+    #editcard .tablewrap{flex:1;min-height:96px;overflow:auto;overscroll-behavior:contain}
+    #preview{max-height:48vh}   /* iets compacter voorbeeld -> de datatabel houdt zichtbare rijen */
+  }
   @media(max-width:920px){ .wrap{grid-template-columns:1fr} }
 
   .card{
@@ -159,6 +173,10 @@
   .swatch:hover{transform:scale(1.08)}
   .swatch.on{border-color:var(--ink);box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--oost-blauw)}
   .swatch[data-hex="#ffffff"]{border-color:var(--lijn)}
+  .swatch[data-hex="#e7eef9"]{border-color:var(--lijn)}
+  .chip-standaard{font:600 11px/1 var(--font);height:26px;padding:0 9px;border-radius:7px;
+    border:1.5px dashed var(--lijn);background:#fff;color:var(--ink-2);cursor:pointer}
+  .chip-standaard.on{border-style:solid;border-color:var(--oost-blauw);color:var(--oost-blauw)}
   .seriescolor{display:flex;align-items:center;gap:8px;margin:6px 0}
   .seriescolor .nm{font-size:12px;font-weight:600;min-width:70px;color:var(--ink)}
   .colgrp{margin-bottom:14px}
@@ -239,6 +257,10 @@
         <div class="lbl">Kleur per reeks</div>
         <div id="seriesColors"></div>
       </div>
+      <div class="colgrp hidden" id="highlightGrp">
+        <div class="lbl">Uitlichten (losse kleur per staaf/kolom)</div>
+        <div id="highlightRows"></div>
+      </div>
       <label class="toggle"><input type="checkbox" id="showValues" checked> Waarden tonen in de grafiek</label>
     </div>
 
@@ -246,6 +268,15 @@
       <h2><span class="step">5</span> Pas het formaat aan</h2>
       <div class="sizes" id="sizes"></div>
     </div>
+
+    <details class="tips">
+      <summary>Tips &amp; huisstijl instellen</summary>
+      <div class="note">
+        De <b>exacte RTV Oost-huisstijlkleuren</b> staan ingesteld (blok <code>HUISSTIJL</code> bovenaan de code),
+        met <b>Oost-blauw</b> als hoofdkleur. Het lettertype <b>Roobert</b> wordt gebruikt; op een computer zonder
+        Roobert valt de tool netjes terug op een systeemletter. De reeksvolgorde is kleurenblind-veilig getoetst.
+      </div>
+    </details>
 
   </div>
 
@@ -272,7 +303,7 @@
     <div class="card hidden" id="editcard">
       <h2>Data aanpassen</h2>
       <p class="hint" style="margin-top:0">Dit zijn de verwerkte cijfers. Pas ze aan en klik op <b>Grafiek bijwerken</b>.</p>
-      <div style="overflow-x:auto"><table class="data" id="datatable"></table></div>
+      <div class="tablewrap" style="overflow-x:auto"><table class="data" id="datatable"></table></div>
       <div class="btnrow" style="margin-top:10px">
         <button class="btn" id="btnAddRow">+ Rij</button>
         <button class="btn" id="btnAddSeries">+ Reeks</button>
@@ -281,17 +312,6 @@
     </div>
 
   </div>
-</div>
-
-<div style="max-width:1600px;margin:0 auto;padding:0 20px 30px">
-  <details class="tips">
-    <summary>Tips &amp; huisstijl instellen</summary>
-    <div class="note">
-      De <b>exacte RTV Oost-huisstijlkleuren</b> staan ingesteld (blok <code>HUISSTIJL</code> bovenaan de code),
-      met <b>Oost-blauw</b> als hoofdkleur. Het lettertype <b>Roobert</b> wordt gebruikt; op een computer zonder
-      Roobert valt de tool netjes terug op een systeemletter. De reeksvolgorde is kleurenblind-veilig getoetst.
-    </div>
-  </details>
 </div>
 
 <script>
@@ -326,9 +346,22 @@ const HUISSTIJL = {
     { naam:"Oost-donkerblauw", hex:"#131720" },
   ],
   teksten: [
-    { naam:"Donkerblauw", hex:"#131720" },
-    { naam:"Wit",         hex:"#ffffff" },
-    { naam:"Oost-blauw",  hex:"#1361ff" },
+    { naam:"Donkerblauw",     hex:"#131720" },
+    { naam:"Wit",             hex:"#ffffff" },
+    { naam:"Oost-blauw",      hex:"#1361ff" },
+    { naam:"Oost-lichtblauw", hex:"#e7eef9" },
+  ],
+  // kleuren voor reeksen/waarden: merkkleuren + lichtblauw + wit (mooi op donkere/blauwe achtergrond)
+  waardePalet: [
+    { naam:"Oost-blauw",       hex:"#1361ff" },
+    { naam:"Oost-oranje",      hex:"#ff6813" },
+    { naam:"Oost-groen",       hex:"#abbf3d" },
+    { naam:"Oost-paars",       hex:"#8f00ff" },
+    { naam:"Oost-rood",        hex:"#ff4242" },
+    { naam:"Oost-geel",        hex:"#ffaf16" },
+    { naam:"Oost-donkerblauw", hex:"#131720" },
+    { naam:"Oost-lichtblauw",  hex:"#e7eef9" },
+    { naam:"Wit",              hex:"#ffffff" },
   ],
 };
 
@@ -359,6 +392,7 @@ const state = {
     achtergrond: "#ffffff",   // hex, of "transparant"
     tekst: "#131720",
     reeks: HUISSTIJL.reeksVolgorde.slice(),
+    uitgelicht: {},           // per label-index een afwijkende kleur (uitlichten), bv. {3:"#ff6813"}
   },
   fotoActief: false,
   foto: { img:null, panX:0.5, panY:0.5, zoom:1, contrast:100, transp:0 },   // pan = fractie [0..1], formaat-onafhankelijk
@@ -732,6 +766,9 @@ function withAlpha(hex,a){
 // kleur voor de i-e reeks (staaf/lijn) of het i-e segment (taart/donut).
 // Valt terug op de huisstijlvolgorde als er meer categorieën dan ingestelde kleuren zijn.
 function catColor(i){ return state.kleuren.reeks[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]; }
+// kleur voor een staaf/kolom: een uitgelichte losse kleur per label overschrijft de reekskleur (bij één reeks)
+function barColor(catIdx, seriesIdx, ns){ const u=state.kleuren.uitgelicht;
+  if(ns===1 && u && u[catIdx]!=null) return u[catIdx]; return catColor(seriesIdx); }
 // WCAG-contrastratio tussen twee kleuren
 function contrastRatio(a,b){ const L1=relLum(a),L2=relLum(b),hi=Math.max(L1,L2),lo=Math.min(L1,L2); return (hi+0.05)/(lo+0.05); }
 // leesbare inkt (donker of wit) tegen achtergrond bg — voor labels ín een gekleurd vlak
@@ -948,7 +985,7 @@ function drawBars(ctx,plot,data,C,horizontal){
         const v=data.series[j].waarden[i]||0;
         const vy=p.y+p.h-((v-sc.min)/(sc.max-sc.min))*p.h;
         const x=gx+bw*j+ (ns>1?1*S:0), bwe=bw-(ns>1?2*S:0);
-        ctx.fillStyle=catColor(j);
+        ctx.fillStyle=barColor(i,j,ns);
         const top=Math.min(vy,zeroY), hgt=Math.abs(vy-zeroY);
         drawRR(ctx,x,top,bwe,hgt,Math.round(5*S), v>=0?"top":"bottom");
         if(state.toonWaarden && (ns*nl)<=28){
@@ -986,7 +1023,7 @@ function drawBars(ctx,plot,data,C,horizontal){
         const v=data.series[j].waarden[i]||0;
         const vx=p.x+((v-scx.min)/(scx.max-scx.min))*p.w;
         const y=gy+bh*j+(ns>1?1*S:0), bhe=bh-(ns>1?2*S:0);
-        ctx.fillStyle=catColor(j);
+        ctx.fillStyle=barColor(i,j,ns);
         const left=Math.min(vx,zeroX), wid=Math.abs(vx-zeroX);
         drawRR(ctx,left,y,wid,bhe,Math.round(5*S), v>=0?"right":"left");
         if(state.toonWaarden && (ns*nl)<=28){
@@ -1172,7 +1209,7 @@ function drawPie(ctx,plot,data,C,innerRatio){
 function drawLollipop(ctx,plot,data,C){
   const {S,F,ink,muted,grid}=C;
   const s=data.series[0];
-  const items=data.labels.map((l,i)=>({l,v:s.waarden[i]||0})).sort((a,b)=>b.v-a.v);
+  const items=data.labels.map((l,i)=>({l,v:s.waarden[i]||0,idx:i})).sort((a,b)=>b.v-a.v);
   const dmax=Math.max(...items.map(it=>it.v),1), dmin=Math.min(0,...items.map(it=>it.v));
   const sc=niceScale(dmin,dmax,6);
   ctx.font=`600 ${Math.round(35*S)}px ${F}`;
@@ -1184,8 +1221,9 @@ function drawLollipop(ctx,plot,data,C){
   for(const t of sc.ticks){ const x=p.x+((t-sc.min)/(sc.max-sc.min))*p.w;
     ctx.beginPath(); ctx.moveTo(x,p.y); ctx.lineTo(x,p.y+p.h); ctx.stroke();
     ctx.fillStyle=muted; ctx.fillText(fmtNum(t),x,p.y+p.h+Math.round(8*S)); }
-  const band=p.h/items.length, col=markColor(catColor(0));
+  const band=p.h/items.length;
   items.forEach((it,i)=>{
+    const col=markColor(barColor(it.idx,0,1));   // uitgelichte kleur per label mogelijk
     const cy=p.y+band*i+band/2, vx=p.x+((it.v-sc.min)/(sc.max-sc.min))*p.w;
     ctx.strokeStyle=col; ctx.lineWidth=Math.max(2,3*S); ctx.lineCap="round";
     ctx.beginPath(); ctx.moveTo(zeroX,cy); ctx.lineTo(vx,cy); ctx.stroke();
@@ -1296,7 +1334,8 @@ function buildDataTable(){
   t.querySelectorAll("input").forEach(inp=>inp.oninput=onTableEdit);
   t.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.del;
     state.data.labels.splice(i,1); state.data.series.forEach(s=>s.waarden.splice(i,1));
-    buildDataTable(); render(); });
+    state.kleuren.uitgelicht={};                                  // label-indexen verschuiven -> uitlichting resetten
+    buildDataTable(); buildColorControls(); render(); });
   t.querySelectorAll("[data-dels]").forEach(b=>b.onclick=()=>{ const j=+b.dataset.dels;
     if(state.data.series.length<=1) return;                       // minstens één reeks houden
     state.data.series.splice(j,1); state.kleuren.reeks.splice(j,1);
@@ -1354,12 +1393,32 @@ function buildColorControls(){
     const nm=document.createElement("span"); nm.className="nm"; nm.textContent=r.nm; row.appendChild(nm);
     const sr=document.createElement("div"); sr.className="swatchrow";
     const current=catColor(r.idx);
-    const paletMetWit=[...HUISSTIJL.palet, {hex:"#ffffff", naam:"Wit"}];   // wit erbij (mooi op blauwe/donkere achtergrond)
-    paletMetWit.forEach(c=>sr.appendChild(swatch(c.hex,c.naam, current===c.hex, ()=>{
+    HUISSTIJL.waardePalet.forEach(c=>sr.appendChild(swatch(c.hex,c.naam, current===c.hex, ()=>{
       state.kleuren.reeks[r.idx]=c.hex; buildColorControls(); render();
     })));
     row.appendChild(sr); grp.appendChild(row);
   });
+
+  // uitlichten: losse kleur per staaf/kolom (alleen zinvol bij één reeks, staaf/kolom/rangschikking)
+  const hlGrp=$("highlightGrp"), hlRows=$("highlightRows");
+  const kanUitlichten = ["kolom","staaf","lollipop"].includes(state.type) && state.data.series.length===1;
+  if(kanUitlichten){
+    hlGrp.classList.remove("hidden"); hlRows.innerHTML="";
+    state.data.labels.forEach((lab,i)=>{
+      const row=document.createElement("div"); row.className="seriescolor";
+      const nm=document.createElement("span"); nm.className="nm"; nm.textContent=lab||("Rij "+(i+1)); row.appendChild(nm);
+      const sr=document.createElement("div"); sr.className="swatchrow";
+      const std=document.createElement("button"); std.type="button";
+      std.className="chip-standaard"+(state.kleuren.uitgelicht[i]==null?" on":"");
+      std.textContent="standaard"; std.title="Zelfde kleur als de rest";
+      std.onclick=()=>{ delete state.kleuren.uitgelicht[i]; buildColorControls(); render(); };
+      sr.appendChild(std);
+      HUISSTIJL.waardePalet.forEach(c=>sr.appendChild(swatch(c.hex,c.naam, state.kleuren.uitgelicht[i]===c.hex, ()=>{
+        state.kleuren.uitgelicht[i]=c.hex; buildColorControls(); render();
+      })));
+      row.appendChild(sr); hlRows.appendChild(row);
+    });
+  } else { hlGrp.classList.add("hidden"); hlRows.innerHTML=""; }
 }
 function swatch(hex,title,on,fn){
   const s=document.createElement("div"); s.className="swatch"+(on?" on":"");
@@ -1414,6 +1473,7 @@ function flash(btn,txt){ const o=btn.textContent; btn.textContent=txt; setTimeou
 function showData(p){
   applyHints(p);
   const vorige=state.kleuren.reeks||[];
+  state.kleuren.uitgelicht={};        // uitlichting hoort bij de vorige dataset -> resetten
   state.data=p;
   state.kleuren.reeks=p.series.map((_,i)=> vorige[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
   state.gegenereerd=true;

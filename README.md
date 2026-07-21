@@ -45,7 +45,10 @@ een vaste link zonder iets te downloaden. Zie *Online zetten* hieronder.
 - **Data aanpassen** — de verwerkte cijfers staan in een tabel. Pas een waarde
   aan en klik **Grafiek bijwerken**. Je kunt rijen en reeksen toevoegen.
 - **Kleuren (huisstijl)** — kies tekstkleur en de kleur per reeks/segment.
-  Alleen huisstijlkleuren zijn beschikbaar, dus het blijft altijd RTV Oost.
+  Alleen huisstijlkleuren zijn beschikbaar (incl. lichtblauw en wit), dus het
+  blijft altijd RTV Oost.
+- **Uitlichten** — geef bij één reeks een losse staaf/kolom een eigen kleur
+  (bijv. alleen Overijssel oranje) via *Uitlichten* onder de kleuren.
 - **Achtergrond** — een huisstijlkleur, **Transparant** (PNG met doorzichtige
   achtergrond, bijv. om zelf onder een tv-beeld te leggen) of een **foto**.
   Bij een foto kun je 'm **verslepen** in het voorbeeld, **inzoomen/bijsnijden**,
