@@ -121,8 +121,14 @@
     background-image:linear-gradient(45deg,#333a49 25%,transparent 25%,transparent 75%,#333a49 75%),
                      linear-gradient(45deg,#333a49 25%,transparent 25%,transparent 75%,#333a49 75%);
   }
-  #preview{width:100%;height:auto;display:block;border-radius:8px;box-shadow:0 2px 14px rgba(11,27,51,.08)}
+  #preview{max-width:100%;max-height:56vh;width:auto;height:auto;display:block;margin:0 auto;border-radius:8px;box-shadow:0 2px 14px rgba(11,27,51,.08)}
   #preview.fotomode{cursor:grab;touch-action:none}
+  /* rechterkolom: grafiek blijft in beeld terwijl je eronder bewerkt */
+  .col-right{display:flex;flex-direction:column}
+  .preview-card{position:sticky;top:14px;z-index:5}
+  #colorcard{order:1}
+  #editcard{order:2}
+  @media(max-width:920px){ .preview-card{position:static} }
   #preview.dragging{cursor:grabbing}
   .swatch.swatch-transparant{
     background-color:#fff;
@@ -213,7 +219,7 @@
   <!-- ===================== RECHTERKOLOM: PREVIEW + BEWERKEN ===================== -->
   <div class="col-right">
 
-    <div class="card">
+    <div class="card preview-card">
       <h2>Voorbeeld</h2>
       <div class="previewwrap">
         <div id="empty" class="empty">
