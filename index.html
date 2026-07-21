@@ -57,19 +57,24 @@
     max-width:1600px;margin:0 auto;
     align-items:start;
   }
-  /* Gesplitst scrollen (desktop): pagina staat vast; linkerkolom scrolt los,
-     het voorbeeld blijft in beeld en "Data aanpassen" krijgt een eigen scrollbalk. */
+  /* Gesplitst scrollen (desktop): pagina staat vast; linkerkolom scrolt los.
+     Rechts scrolt óók, maar het voorbeeld plakt bovenaan en KRIMPT naar een
+     compacte versie zodra je naar de data scrolt — zo blijft de grafiek altijd
+     (verkleind) zichtbaar en krijgt de datatabel de ruimte. */
   @media(min-width:921px){
     html,body{height:100%;overflow:hidden}
     body{display:flex;flex-direction:column}
     header.app{flex:none}
     .wrap{flex:1;min-height:0;width:100%;overflow:hidden;align-items:stretch}
     .col-left{overflow-y:auto;min-height:0;padding-right:4px;overscroll-behavior:contain}
-    .col-right{overflow:hidden;min-height:0}
-    .col-right .preview-card{flex:none}
-    #editcard:not(.hidden){flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
-    #editcard .tablewrap{flex:1;min-height:96px;overflow:auto;overscroll-behavior:contain}
-    #preview{max-height:48vh}   /* iets compacter voorbeeld -> de datatabel houdt zichtbare rijen */
+    .col-right{overflow-y:auto;min-height:0;overscroll-behavior:contain}
+    .col-right .preview-card{position:sticky;top:0;z-index:6;flex:none;
+      box-shadow:0 6px 18px rgba(11,27,51,.10)}
+    #preview{max-height:50vh;transition:max-height .28s ease}
+    .col-right.compact #preview{max-height:21vh}
+    .col-right.compact .preview-card h2{display:none}          /* compacte kop: meer ruimte voor de grafiek zelf */
+    .col-right.compact::after{content:"";display:block;flex:none;height:32vh}  /* houdt de scroll-ruimte stabiel (geen flikkeren) */
+    #editcard .tablewrap{max-height:52vh;overflow:auto;overscroll-behavior:contain}
   }
   @media(max-width:920px){ .wrap{grid-template-columns:1fr} }
 
@@ -1573,4 +1578,15 @@ function iconDashboard(){return `<svg viewBox="0 0 40 34" fill="none" stroke-wid
 
 /* ---- init ---- */
 buildTypePicker();
+
+/* Voorbeeld krimpt naar compact zodra je rechts naar de data scrolt (met
+   hysterese zodat het niet flikkert); omhoog scrollen maakt 'm weer groot. */
+(function(){
+  const cr=document.querySelector(".col-right"); if(!cr) return;
+  cr.addEventListener("scroll",()=>{
+    const sc=cr.scrollTop;
+    if(!cr.classList.contains("compact") && sc>110) cr.classList.add("compact");
+    else if(cr.classList.contains("compact") && sc<30) cr.classList.remove("compact");
+  },{passive:true});
+})();
 </script>
