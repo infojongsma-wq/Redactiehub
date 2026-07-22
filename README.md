@@ -43,9 +43,11 @@ een vaste link zonder iets te downloaden. Zie *Online zetten* hieronder.
 ### Daarna
 
 - **Data aanpassen** — de verwerkte cijfers staan in een tabel. Pas een waarde
-  aan en klik **Grafiek bijwerken**. Je kunt rijen en reeksen toevoegen.
-  Iets per ongeluk verwijderd of overschreven? **Ctrl+Z** (of de **↶ Ongedaan**-
-  knop) haalt het terug; **Ctrl+Y** doet het opnieuw.
+  aan en klik **Grafiek bijwerken**. Je kunt rijen en reeksen toevoegen, en met
+  de **↑/↓-knopjes** rijen verschuiven om de volgorde in de grafiek te bepalen
+  (uitlicht- en labelkleuren verhuizen mee). Iets per ongeluk verwijderd of
+  overschreven? **Ctrl+Z** (of de **↶ Ongedaan**-knop) haalt het terug;
+  **Ctrl+Y** doet het opnieuw.
 - **Voorbeeld-grootte** — scroll naar de data en het voorbeeld krimpt vanzelf
   naar een compacte versie (en groeit weer bij terugscrollen). Liever zelf
   bepalen? Sleep het **balkje onder het voorbeeld** naar de gewenste hoogte;
@@ -197,4 +199,4 @@ De opbouw van de code staat in het commentaarblok bovenaan `index.html`
 Alle grafiektypes, de data-parser (incl. Excel, komma/puntkomma-CSV met quotes
 en dataportaal-exports), tekst-extractie, kleuren (incl. uitlichten en
 labelkleur), undo, PNG-export, de drie formaten en de layout zijn
-geautomatiseerd getest met een headless browser (166 checks, incl. de galerij).
+geautomatiseerd getest met een headless browser (173 checks, incl. galerij en rij-volgorde).

@@ -224,6 +224,7 @@
   table.data td.num input{text-align:right;font-variant-numeric:tabular-nums}
   table.data td.del{width:26px;text-align:center}
   .icon-btn{border:0;background:none;cursor:pointer;color:var(--ink-2);font-size:15px;padding:2px 6px;border-radius:6px}
+  .icon-btn:disabled{opacity:.25;cursor:default;pointer-events:none}
   .icon-btn:hover{background:#ffe9e9;color:#c0392b}
 
   /* swatches */
@@ -1406,7 +1407,7 @@ function buildDataTable(){
     const tr=document.createElement("tr");
     tr.innerHTML=`<td><input data-l="${i}" value="${escapeAttr(lab)}"></td>`+
       d.series.map((s,j)=>`<td class="num"><input data-r="${i}" data-c="${j}" value="${s.waarden[i]??""}"></td>`).join("")+
-      `<td class="del"><button class="icon-btn" data-del="${i}">✕</button></td>`;
+      `<td class="del"><button class="icon-btn" data-up="${i}" title="Rij omhoog" ${i===0?"disabled":""}>↑</button><button class="icon-btn" data-down="${i}" title="Rij omlaag" ${i===d.labels.length-1?"disabled":""}>↓</button><button class="icon-btn" data-del="${i}" title="Rij verwijderen">✕</button></td>`;
     t.appendChild(tr);
   });
   t.querySelectorAll("input").forEach(inp=>{ inp.oninput=onTableEdit;
@@ -1421,6 +1422,18 @@ function buildDataTable(){
     pushUndo();                                                   // verwijderde reeks is terug te halen met Ctrl+Z
     state.data.series.splice(j,1); state.kleuren.reeks.splice(j,1);
     buildDataTable(); buildColorControls(); render(); });
+  // rij omhoog/omlaag schuiven — kleuren (uitlichten/labelkleur) verhuizen mee
+  const wisselKleur=(map,i,j)=>{ const a=map[i], b2=map[j];
+    if(b2==null) delete map[i]; else map[i]=b2;
+    if(a==null)  delete map[j]; else map[j]=a; };
+  const verplaats=(i,j)=>{ if(j<0 || j>=state.data.labels.length) return;
+    pushUndo();
+    const L=state.data.labels; [L[i],L[j]]=[L[j],L[i]];
+    state.data.series.forEach(s=>{ [s.waarden[i],s.waarden[j]]=[s.waarden[j],s.waarden[i]]; });
+    wisselKleur(state.kleuren.uitgelicht,i,j); wisselKleur(state.kleuren.labelKleur,i,j);
+    buildDataTable(); buildColorControls(); render(); };
+  t.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>verplaats(+b.dataset.up, +b.dataset.up-1));
+  t.querySelectorAll("[data-down]").forEach(b=>b.onclick=()=>verplaats(+b.dataset.down, +b.dataset.down+1));
 }
 function onTableEdit(e){
   // eerste wijziging binnen deze focus-sessie -> één undo-stap voor de hele bewerking
@@ -1484,9 +1497,14 @@ function buildColorControls(){
   });
 
   // uitlichten: losse kleur per staaf/kolom (alleen zinvol bij één reeks, staaf/kolom/rangschikking)
+  const hlType=["kolom","staaf","lollipop"].includes(state.type);
   buildPerLabelRows("highlightGrp","highlightRows", state.kleuren.uitgelicht,
-    ["kolom","staaf","lollipop"].includes(state.type) && state.data.series.length===1,
+    hlType && state.data.series.length===1,
     "Zelfde kleur als de rest");
+  if(hlType && state.data.series.length>1){                       // wel tonen mét uitleg (vindbaarheid)
+    $("highlightGrp").classList.remove("hidden");
+    $("highlightRows").innerHTML='<p class="hint" style="margin:4px 0 0">Uitlichten van één losse staaf/kolom werkt bij <b>één reeks</b>. Je hebt nu meerdere reeksen — kies dan hierboven de kleur per reeks, of verwijder reeksen tot er één overblijft.</p>';
+  }
   // labelkleur: eigen tekstkleur per categorielabel (alle types met zichtbare labels)
   buildPerLabelRows("labelKleurGrp","labelKleurRows", state.kleuren.labelKleur,
     state.type!=="kpi" && state.data.labels.length>0,
