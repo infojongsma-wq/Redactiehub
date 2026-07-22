@@ -1,25 +1,51 @@
 // Galerij-API (Vercel serverless) — bewaart PNG's in Vercel Blob.
 //
-// Werkt met een PRIVÉ Blob-store (de standaard op Vercel): grafieken worden
-// privé opgeslagen en via deze functie zelf teruggegeven (proxy), zodat er
-// geen openbare store-instelling nodig is.
+// Werkt op ELKE Vercel Blob-store (privé óf openbaar): grafieken worden
+// opgeslagen en via deze functie zelf teruggegeven (proxy), zodat er geen
+// bepaalde store-instelling nodig is.
 //
-// Vereist in Vercel: een Blob store gekoppeld aan dit project (Storage → Blob),
-// dat zet automatisch BLOB_READ_WRITE_TOKEN. Optioneel: env var GALERIJ_CODE
-// om bewaren/verwijderen af te schermen met een redactiecode (bekijken kan altijd).
+// Vereist: een Blob store gekoppeld aan dit project (Storage → Blob) + één keer
+// opnieuw deployen. De token wordt ook herkend als Vercel er een prefix voor
+// gebruikt (bv. GRAFIEKEN_BLOB_READ_WRITE_TOKEN). Optioneel: env var GALERIJ_CODE
+// beschermt bewaren/verwijderen met een redactiecode (bekijken kan altijd).
 import { put, list, del, get } from "@vercel/blob";
 
 const PREFIX = "grafieken/";
 
+// vind de Blob-token, ook als Vercel er een prefix voor zet (meerdere stores)
+function blobToken() {
+  if (process.env.BLOB_READ_WRITE_TOKEN) return process.env.BLOB_READ_WRITE_TOKEN;
+  const k = Object.keys(process.env).find(k => /BLOB_READ_WRITE_TOKEN$/.test(k) && process.env[k]);
+  return k ? process.env[k] : undefined;
+}
+const isAccessFout = e => /private|public|access/i.test(String(e && e.message));
+
+// probeer privé; valt terug op openbaar zodat het op elk store-type werkt
+async function putAdaptief(pathname, buf, token) {
+  const opt = { contentType: "image/png", addRandomSuffix: true, token };
+  try { return await put(pathname, buf, { access: "private", ...opt }); }
+  catch (e) { if (!isAccessFout(e)) throw e; return await put(pathname, buf, { access: "public", ...opt }); }
+}
+async function getAdaptief(pathname, token) {
+  try { return await get(pathname, { access: "private", token }); }
+  catch (e) { if (!isAccessFout(e)) throw e; return await get(pathname, { access: "public", token }); }
+}
+
 export default async function handler(req, res) {
+  const token = blobToken();
   const code = process.env.GALERIJ_CODE;
   const authOk = !code || req.headers["x-galerij-code"] === code;
+
+  if (!token) return res.status(500).json({
+    fout: "Blob-opslag niet gekoppeld. Koppel in Vercel een Blob store aan dit project (Storage) en klik daarna op Redeploy (env-variabelen gaan alleen mee in een nieuwe deploy).",
+  });
+
   try {
     // --- afbeelding tonen/downloaden (open: de hele galerij is zichtbaar) ---
     if (req.method === "GET" && req.query && req.query.img) {
       const pad = String(req.query.img);
       if (!pad.startsWith(PREFIX)) return res.status(400).json({ fout: "Ongeldige afbeelding." });
-      const r = await get(pad, { access: "private" });
+      const r = await getAdaptief(pad, token);
       if (!r || r.statusCode !== 200 || !r.stream) return res.status(404).json({ fout: "Niet gevonden." });
       const buf = Buffer.from(await new Response(r.stream).arrayBuffer());
       res.setHeader("Content-Type", (r.blob && r.blob.contentType) || "image/png");
@@ -30,7 +56,7 @@ export default async function handler(req, res) {
 
     // --- lijst van bewaarde grafieken ---
     if (req.method === "GET") {
-      const { blobs } = await list({ prefix: PREFIX });
+      const { blobs } = await list({ prefix: PREFIX, token });
       const items = blobs
         .map(b => ({ pad: b.pathname, datum: b.uploadedAt, grootte: b.size,
           viewUrl: "/api/grafieken?img=" + encodeURIComponent(b.pathname) }))
@@ -50,8 +76,7 @@ export default async function handler(req, res) {
       if (!buf.length) return res.status(400).json({ fout: "Lege afbeelding." });
       if (buf.length > 4_000_000) return res.status(413).json({ fout: "Afbeelding te groot (max ±4 MB)." });
       const stamp = new Date().toISOString().slice(0, 10);
-      const blob = await put(`${PREFIX}${stamp}-${veilig}.png`, buf,
-        { access: "private", contentType: "image/png", addRandomSuffix: true });
+      const blob = await putAdaptief(`${PREFIX}${stamp}-${veilig}.png`, buf, token);
       return res.status(200).json({ pad: blob.pathname });
     }
 
@@ -60,18 +85,13 @@ export default async function handler(req, res) {
       if (!authOk) return res.status(401).json({ fout: "Onjuiste of ontbrekende redactiecode." });
       const pad = (req.query && req.query.pad) || (req.body && req.body.pad);
       if (!pad || !String(pad).startsWith(PREFIX)) return res.status(400).json({ fout: "Ongeldig pad." });
-      await del(String(pad));
+      await del(String(pad), { token });
       return res.status(200).json({ ok: true });
     }
 
     res.setHeader("Allow", "GET, POST, DELETE");
     return res.status(405).json({ fout: "Methode niet toegestaan." });
   } catch (err) {
-    const geenStore = !process.env.BLOB_READ_WRITE_TOKEN;
-    return res.status(500).json({
-      fout: geenStore
-        ? "Blob-opslag niet gekoppeld. Koppel in Vercel een Blob store aan dit project (Storage → Create Database → Blob) en deploy opnieuw."
-        : "Serverfout: " + err.message,
-    });
+    return res.status(500).json({ fout: "Serverfout: " + err.message });
   }
 }
