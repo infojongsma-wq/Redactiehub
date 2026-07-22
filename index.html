@@ -31,6 +31,9 @@
               6. EXCEL-LEZER    native .xlsx (zip + xml, zonder library)
               7. CHART ENGINE   canvas-tekenwerk op export-resolutie
               8. UI-KOPPELING   tabel, kleuren, undo (Ctrl+Z), foto, bestanden
+              9. GALERIJ        gedeelde grafieken via /api/grafieken
+                                (api/grafieken.js — Vercel + Blob; offline
+                                 versie toont een nette uitleg)
 
   Geautomatiseerd getest met een headless browser (150+ checks): parser,
   Excel-import, alle grafiektypes, kleuren, undo, export en de layout.
@@ -144,6 +147,26 @@
   }
   .btn:hover{border-color:var(--oost-blauw)}
   .btn:disabled{opacity:.45;cursor:default;pointer-events:none}
+  .hdrbtn{font:600 13px var(--font);color:#fff;background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:7px 13px;cursor:pointer}
+  .hdrbtn:hover{background:rgba(255,255,255,.22)}
+
+  /* ---- galerij (gedeelde grafieken) ---- */
+  .gmodal{position:fixed;inset:0;z-index:50;background:rgba(11,17,27,.55);
+    display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;overflow:auto}
+  .gmodal.hidden{display:none}
+  .gmodal-inner{background:var(--vlak);border-radius:var(--radius);max-width:1200px;width:100%;
+    padding:16px 18px 18px;box-shadow:0 18px 60px rgba(11,17,27,.35)}
+  .gmodal-kop{display:flex;gap:10px;align-items:center}
+  .ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:14px}
+  .gitem{background:#fff;border:1px solid var(--lijn);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+  .gitem img{width:100%;aspect-ratio:16/9;object-fit:contain;background:
+    repeating-conic-gradient(#eef1f6 0% 25%, #fff 0% 50%) 0 0/18px 18px;display:block}
+  .gitem .gmeta{padding:9px 11px;font-size:12.5px;display:flex;gap:8px;align-items:center}
+  .gitem .gnaam{font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .gitem .gdatum{color:var(--ink-2);white-space:nowrap}
+  .gitem .gknoppen{display:flex;gap:6px;padding:0 11px 10px}
+  .gitem .gknoppen .btn{padding:5px 10px;font-size:12px}
   .btn.primary{background:var(--oost-blauw);color:#fff;border-color:var(--oost-blauw)}
   .btn.primary:hover{background:#0d4ad9}
   .btn.big{width:100%;padding:13px;font-size:16px;margin-top:4px}
@@ -236,6 +259,7 @@
 <header class="app">
   <span class="logo">oost</span>
   <h1>Grafiekmaker · Redactiehub</h1>
+  <button class="hdrbtn" id="btnGalerij" title="Bewaarde grafieken van de redactie">🖼 Galerij</button>
   <span class="sub">datavisualisatie in de huisstijl</span>
 </header>
 
@@ -341,6 +365,7 @@
         <div class="btnrow">
           <button class="btn primary" id="btnPng" style="flex:1">⬇ Download PNG</button>
           <button class="btn" id="btnCopy">📋 Kopieer</button>
+          <button class="btn" id="btnSave" title="Bewaar deze grafiek in de gedeelde galerij">☁ In galerij</button>
         </div>
       </div>
       <div id="splitter" title="Sleep om het voorbeeld groter of kleiner te maken · dubbelklik = automatisch"><span></span></div>
@@ -358,6 +383,19 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- Galerij: gedeelde grafieken van de redactie (opslag via /api/grafieken) -->
+<div id="galerijModal" class="gmodal hidden" role="dialog" aria-label="Galerij">
+  <div class="gmodal-inner">
+    <div class="gmodal-kop">
+      <h2 style="margin:0;font-size:16px">🖼 Galerij — bewaarde grafieken</h2>
+      <button class="btn" id="btnGalerijVerversen">↻ Verversen</button>
+      <button class="btn" id="btnGalerijSluiten" style="margin-left:auto">✕ Sluiten</button>
+    </div>
+    <div id="galerijStatus" class="hint" style="margin:8px 0 0"></div>
+    <div id="galerijGrid" class="ggrid"></div>
   </div>
 </div>
 
@@ -1648,6 +1686,74 @@ function iconDonut(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r=
 function iconLolli(){return `<svg viewBox="0 0 40 34"><g stroke="#1361ff" stroke-width="2.5"><line x1="4" y1="8" x2="26" y2="8"/><line x1="4" y1="17" x2="34" y2="17"/><line x1="4" y1="26" x2="16" y2="26"/></g><g fill="#1361ff"><circle cx="26" cy="8" r="4"/><circle cx="34" cy="17" r="4"/><circle cx="16" cy="26" r="4"/></g></svg>`}
 function iconKpi(){return `<svg viewBox="0 0 40 34"><text x="20" y="24" font-size="22" font-weight="800" text-anchor="middle" fill="#1361ff" font-family="Arial">73%</text></svg>`}
 function iconDashboard(){return `<svg viewBox="0 0 40 34" fill="none" stroke-width="4"><circle cx="11" cy="17" r="7" stroke="#e6e9f0"/><path d="M11 10 a7 7 0 0 1 5 12" stroke="#1361ff" stroke-linecap="round"/><circle cx="29" cy="17" r="7" stroke="#e6e9f0"/><path d="M29 10 a7 7 0 0 1 6 8" stroke="#ff6813" stroke-linecap="round"/></svg>`}
+
+/* ============================================================================
+   9. GALERIJ  —  gedeelde grafieken van de redactie.
+   Opslag via /api/grafieken (Vercel + Blob, zie api/grafieken.js en README).
+   Op de offline dubbelklik-versie toont de galerij een nette uitleg.
+   ========================================================================== */
+const GALERIJ={ api:"/api/grafieken" };
+const galerijOnline=()=> location.protocol==="http:"||location.protocol==="https:";
+function galerijCode(){ try{ return localStorage.getItem("rh_galerij_code")||""; }catch(_){ return ""; } }
+async function galerijFetch(method, opts={}, retry=true){
+  const headers={ ...(opts.headers||{}) };
+  const c=galerijCode(); if(c) headers["x-galerij-code"]=c;
+  const res=await fetch(GALERIJ.api+(opts.qs||""), { method, headers, body:opts.body });
+  if(res.status===401 && retry){
+    const nieuw=prompt("Redactiecode voor de galerij:");
+    if(nieuw==null) return res;
+    try{ localStorage.setItem("rh_galerij_code", nieuw.trim()); }catch(_){}
+    return galerijFetch(method, opts, false);
+  }
+  return res;
+}
+async function galerijLaden(){
+  const st=$("galerijStatus"), grid=$("galerijGrid"); grid.innerHTML="";
+  if(!galerijOnline()){ st.textContent="De galerij werkt alleen op de online versie van de app (zie README: Vercel + Blob-opslag). Deze offline versie blijft verder volledig werken."; return; }
+  st.textContent="Laden…";
+  try{
+    const res=await fetch(GALERIJ.api);
+    if(!res.ok){ const e=await res.json().catch(()=>({})); st.textContent="Galerij niet beschikbaar: "+(e.fout||("HTTP "+res.status)); return; }
+    const data=await res.json(), items=data.items||[];
+    st.textContent= items.length ? items.length+" bewaarde grafiek(en) — nieuwste eerst."
+                                 : "Nog geen grafieken bewaard. Maak een grafiek en klik op “☁ In galerij”.";
+    for(const it of items){
+      const d=document.createElement("div"); d.className="gitem";
+      const naam=(it.pad||"").replace(/^grafieken\//,"").replace(/\.png$/,"").replace(/-[A-Za-z0-9]{16,}$/,"");
+      const datum=it.datum? new Date(it.datum).toLocaleDateString("nl-NL",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
+      d.innerHTML=`<a href="${escapeAttr(it.url)}" target="_blank" rel="noopener"><img loading="lazy" src="${escapeAttr(it.url)}" alt="${escapeAttr(naam)}"></a>
+        <div class="gmeta"><span class="gnaam" title="${escapeAttr(naam)}">${escapeAttr(naam)}</span><span class="gdatum">${datum}</span></div>
+        <div class="gknoppen"><a class="btn" href="${escapeAttr(it.url)}" download target="_blank" rel="noopener">⬇ Download</a>
+        <button class="btn gdel" data-url="${escapeAttr(it.url)}">✕ Verwijderen</button></div>`;
+      grid.appendChild(d);
+    }
+    grid.querySelectorAll(".gdel").forEach(b=>b.onclick=async ()=>{
+      if(!confirm("Deze grafiek voor iedereen uit de galerij verwijderen?")) return;
+      const res=await galerijFetch("DELETE",{ qs:"?url="+encodeURIComponent(b.dataset.url) });
+      if(res.ok) galerijLaden();
+      else{ const e=await res.json().catch(()=>({})); alert("Verwijderen mislukt: "+(e.fout||("HTTP "+res.status))); }
+    });
+  }catch(_){ st.textContent="Galerij niet bereikbaar. Staat de app online met gekoppelde Blob-opslag? (Zie README.)"; }
+}
+async function galerijBewaren(){
+  if(!state.gegenereerd){ alert("Maak eerst een grafiek."); return; }
+  if(!galerijOnline()){ alert("Bewaren in de gedeelde galerij werkt alleen op de online versie van de app.\n\nGebruik hier ⬇ Download PNG."); return; }
+  const btn=$("btnSave"), o=btn.textContent; btn.disabled=true; btn.textContent="Bewaren…";
+  try{
+    const png=$("preview").toDataURL("image/png");
+    const naam=$("titel").value.trim()||"grafiek";
+    const res=await galerijFetch("POST",{ headers:{ "content-type":"application/json" },
+      body: JSON.stringify({ naam, png }) });
+    if(res.ok){ btn.textContent=o; flash(btn,"Bewaard ✓"); }
+    else{ const e=await res.json().catch(()=>({})); alert("Bewaren mislukt: "+(e.fout||("HTTP "+res.status))); }
+  }catch(_){ alert("Geen verbinding met de galerij-opslag."); }
+  finally{ btn.disabled=false; if(btn.textContent==="Bewaren…") btn.textContent=o; }
+}
+$("btnSave").onclick=galerijBewaren;
+$("btnGalerij").onclick=()=>{ $("galerijModal").classList.remove("hidden"); galerijLaden(); };
+$("btnGalerijSluiten").onclick=()=>$("galerijModal").classList.add("hidden");
+$("btnGalerijVerversen").onclick=galerijLaden;
+$("galerijModal").addEventListener("click",e=>{ if(e.target.id==="galerijModal") $("galerijModal").classList.add("hidden"); });
 
 /* ---- init ---- */
 buildTypePicker();

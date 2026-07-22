@@ -133,6 +133,31 @@ waarde-labels en de datatabel standaard aan.
    (root).
 3. Na een minuut staat de tool op `https://<gebruiker>.github.io/<repo>/`.
 
+## Galerij — gedeelde grafieken van de redactie
+
+Op de **online versie** kan iedereen gemaakte grafieken **bewaren en
+terugzien**: klik na het genereren op **☁ In galerij**, en open de galerij
+via de knop **🖼 Galerij** bovenin. Daar staan alle bewaarde grafieken
+(nieuwste eerst) met download- en verwijderknop.
+
+**Zo zet je de opslag aan (eenmalig, via Vercel — gratis):**
+
+1. Ga naar [vercel.com](https://vercel.com) → **Add New → Project** →
+   importeer deze GitHub-repo. Geen build-instellingen nodig → **Deploy**.
+2. In het project: **Storage → Create Database → Blob** → koppel aan dit
+   project. (Dit zet automatisch de omgevingsvariabele
+   `BLOB_READ_WRITE_TOKEN`.)
+3. *(Aanrader)* **Settings → Environment Variables** → voeg `GALERIJ_CODE`
+   toe met een zelfgekozen redactiecode. Bewaren/verwijderen vraagt dan
+   éénmalig die code (bekijken kan altijd). Zonder deze variabele kan
+   iedereen met de link bewaren en verwijderen.
+4. Redeploy. Klaar — de app draait op `https://<project>.vercel.app`.
+
+De techniek zit in `api/grafieken.js` (een kleine serverless functie) en
+gebruikt Vercel Blob als opslag. Op de offline dubbelklik-versie en op
+GitHub Pages (geen serverfuncties) toont de galerij een nette uitleg;
+al het overige blijft daar gewoon werken.
+
 ## In een app zetten
 
 `index.html` is volledig self-contained (geen dependencies, geen server) en
@@ -172,4 +197,4 @@ De opbouw van de code staat in het commentaarblok bovenaan `index.html`
 Alle grafiektypes, de data-parser (incl. Excel, komma/puntkomma-CSV met quotes
 en dataportaal-exports), tekst-extractie, kleuren (incl. uitlichten en
 labelkleur), undo, PNG-export, de drie formaten en de layout zijn
-geautomatiseerd getest met een headless browser (154 checks).
+geautomatiseerd getest met een headless browser (166 checks, incl. de galerij).
