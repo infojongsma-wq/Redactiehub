@@ -1739,15 +1739,16 @@ async function galerijLaden(){
       const d=document.createElement("div"); d.className="gitem";
       const naam=(it.pad||"").replace(/^grafieken\//,"").replace(/\.png$/,"").replace(/-[A-Za-z0-9]{16,}$/,"");
       const datum=it.datum? new Date(it.datum).toLocaleDateString("nl-NL",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
-      d.innerHTML=`<a href="${escapeAttr(it.url)}" target="_blank" rel="noopener"><img loading="lazy" src="${escapeAttr(it.url)}" alt="${escapeAttr(naam)}"></a>
+      const view=escapeAttr(it.viewUrl||""), dl=escapeAttr((it.viewUrl||"")+"&download=1");
+      d.innerHTML=`<a href="${view}" target="_blank" rel="noopener"><img loading="lazy" src="${view}" alt="${escapeAttr(naam)}"></a>
         <div class="gmeta"><span class="gnaam" title="${escapeAttr(naam)}">${escapeAttr(naam)}</span><span class="gdatum">${datum}</span></div>
-        <div class="gknoppen"><a class="btn" href="${escapeAttr(it.url)}" download target="_blank" rel="noopener">⬇ Download</a>
-        <button class="btn gdel" data-url="${escapeAttr(it.url)}">✕ Verwijderen</button></div>`;
+        <div class="gknoppen"><a class="btn" href="${dl}" target="_blank" rel="noopener">⬇ Download</a>
+        <button class="btn gdel" data-pad="${escapeAttr(it.pad)}">✕ Verwijderen</button></div>`;
       grid.appendChild(d);
     }
     grid.querySelectorAll(".gdel").forEach(b=>b.onclick=async ()=>{
       if(!confirm("Deze grafiek voor iedereen uit de galerij verwijderen?")) return;
-      const res=await galerijFetch("DELETE",{ qs:"?url="+encodeURIComponent(b.dataset.url) });
+      const res=await galerijFetch("DELETE",{ qs:"?pad="+encodeURIComponent(b.dataset.pad) });
       if(res.ok) galerijLaden();
       else{ const e=await res.json().catch(()=>({})); alert("Verwijderen mislukt: "+(e.fout||("HTTP "+res.status))); }
     });

@@ -156,9 +156,11 @@ via de knop **🖼 Galerij** bovenin. Daar staan alle bewaarde grafieken
 4. Redeploy. Klaar — de app draait op `https://<project>.vercel.app`.
 
 De techniek zit in `api/grafieken.js` (een kleine serverless functie) en
-gebruikt Vercel Blob als opslag. Op de offline dubbelklik-versie en op
-GitHub Pages (geen serverfuncties) toont de galerij een nette uitleg;
-al het overige blijft daar gewoon werken.
+gebruikt Vercel Blob als **privé** opslag: de grafieken worden privé bewaard
+en door de functie zelf teruggegeven (proxy). Je hoeft dus **niets** aan de
+store-instellingen te wijzigen — een standaard (privé) Blob-store koppelen is
+genoeg. Op de offline dubbelklik-versie en op GitHub Pages (geen serverfuncties)
+toont de galerij een nette uitleg; al het overige blijft daar gewoon werken.
 
 ## In een app zetten
 
