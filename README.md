@@ -55,6 +55,9 @@ een vaste link zonder iets te downloaden. Zie *Online zetten* hieronder.
   blijft altijd RTV Oost.
 - **Uitlichten** — geef bij één reeks een losse staaf/kolom een eigen kleur
   (bijv. alleen Overijssel oranje) via *Uitlichten* onder de kleuren.
+- **Labelkleur** — geef ook de **tekst van een los label** een eigen kleur
+  (via het uitklapbare *Labelkleur* onder de kleuren). Onleesbare combinaties
+  (bijv. lichtblauw op wit) vallen automatisch terug op de gewone tekstkleur.
 - **Achtergrond** — een huisstijlkleur, **Transparant** (PNG met doorzichtige
   achtergrond, bijv. om zelf onder een tv-beeld te leggen) of een **foto**.
   Bij een foto kun je 'm **verslepen** in het voorbeeld, **inzoomen/bijsnijden**,
@@ -130,6 +133,23 @@ waarde-labels en de datatabel standaard aan.
    (root).
 3. Na een minuut staat de tool op `https://<gebruiker>.github.io/<repo>/`.
 
+## In een app zetten
+
+`index.html` is volledig self-contained (geen dependencies, geen server) en
+werkt overal waar een moderne browser-engine zit:
+
+- **Webapp** — op GitHub Pages of een interne webserver (zie hierboven).
+- **Desktop-app** — laad het bestand in **Electron** of **Tauri** als enige
+  pagina; er is geen backend of build-stap nodig.
+- **Ingebed** — in een `<iframe>` of WebView binnen een bestaand systeem
+  (bijv. het redactie-CMS).
+
+Enige vereiste voor de **Excel-import**: de browser-API `DecompressionStream`
+(Chrome/Edge 80+, Safari 16.4+, Firefox 113+). Op oudere engines blijft al
+het overige gewoon werken; alleen `.xlsx` lezen geeft dan een nette melding.
+De opbouw van de code staat in het commentaarblok bovenaan `index.html`
+(genummerde secties 1–8).
+
 ---
 
 ## Techniek
@@ -149,6 +169,7 @@ waarde-labels en de datatabel standaard aan.
 
 ## Getest
 
-Alle grafiektypes, de data-parser (incl. Excel, puntkomma-CSV met quotes en
-dataportaal-exports), tekst-extractie, PNG-export en de drie formaten zijn
-geautomatiseerd getest met een headless browser (75 checks).
+Alle grafiektypes, de data-parser (incl. Excel, komma/puntkomma-CSV met quotes
+en dataportaal-exports), tekst-extractie, kleuren (incl. uitlichten en
+labelkleur), undo, PNG-export, de drie formaten en de layout zijn
+geautomatiseerd getest met een headless browser (154 checks).

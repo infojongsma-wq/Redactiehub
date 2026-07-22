@@ -1,3 +1,6 @@
+<!doctype html>
+<html lang="nl">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Grafiekmaker — Redactiehub Oost</title>
@@ -5,9 +8,32 @@
 <!--
   ============================================================================
   REDACTIEHUB · GRAFIEKMAKER (RTV Oost)
-  Eén zelfstandig HTML-bestand. Geen installatie, geen internet nodig.
-  Open dit bestand in een browser (dubbelklik), of zet het online via
-  GitHub Pages. Alle data blijft op je eigen computer.
+
+  Eén zelfstandig HTML-bestand: geen dependencies, geen build-stap, geen
+  internet nodig. Alle data blijft op de computer van de gebruiker.
+
+  IN EEN APP ZETTEN
+  - Dit bestand is self-contained en werkt overal waar een moderne browser-
+    engine zit: GitHub Pages / interne webserver, een WebView, Electron of
+    Tauri, of gewoon als los bestand (dubbelklikken).
+  - Vereist voor de Excel-import: DecompressionStream (Chrome/Edge 80+,
+    Safari 16.4+, Firefox 113+). Zonder die API blijft al het overige werken.
+
+  OPBOUW (zoek op het sectienummer)
+    <style>   interface-css (incl. gesplitst scrollen + sleepbalkje)
+    <body>    linkerkolom stap 1-5, rechterkolom voorbeeld + datatabel
+    <script>  1. HUISSTIJL      merk-kleuren/lettertype — hier pas je stijl aan
+              2. GRAFIEKTYPES   registratie van de 10 grafiekvormen
+              3. STATE          één centraal state-object
+              4. GETALLEN       Nederlandse notatie (35,6 / 1.200)
+              5. INVOER PARSEN  CSV/TSV (komma, puntkomma, tab, quotes),
+                                dataportaal-exports, tekst-extractie
+              6. EXCEL-LEZER    native .xlsx (zip + xml, zonder library)
+              7. CHART ENGINE   canvas-tekenwerk op export-resolutie
+              8. UI-KOPPELING   tabel, kleuren, undo (Ctrl+Z), foto, bestanden
+
+  Geautomatiseerd getest met een headless browser (150+ checks): parser,
+  Excel-import, alle grafiektypes, kleuren, undo, export en de layout.
   ============================================================================
 -->
 
@@ -204,6 +230,8 @@
   .hidden{display:none !important}
   .note{background:#fff8e6;border:1px solid #f0dca0;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#6b5a1f;margin-top:8px}
 </style>
+</head>
+<body>
 
 <header class="app">
   <span class="logo">oost</span>
@@ -274,6 +302,10 @@
         <div class="lbl">Uitlichten (losse kleur per staaf/kolom)</div>
         <div id="highlightRows"></div>
       </div>
+      <details class="colgrp hidden" id="labelKleurGrp">
+        <summary class="lbl" style="cursor:pointer">Labelkleur (tekst per label)</summary>
+        <div id="labelKleurRows"></div>
+      </details>
       <label class="toggle"><input type="checkbox" id="showValues" checked> Waarden tonen in de grafiek</label>
     </div>
 
@@ -339,7 +371,6 @@
    ========================================================================== */
 const HUISSTIJL = {
   fontFamily: "Roobert, Inter, 'Helvetica Neue', Arial, sans-serif",
-  logoTekst: "Oost",
 
   // Genoemde merkkleuren — deze verschijnen in de kleurkiezers.
   palet: [
@@ -407,7 +438,8 @@ const state = {
     achtergrond: "#ffffff",   // hex, of "transparant"
     tekst: "#131720",
     reeks: HUISSTIJL.reeksVolgorde.slice(),
-    uitgelicht: {},           // per label-index een afwijkende kleur (uitlichten), bv. {3:"#ff6813"}
+    uitgelicht: {},           // per label-index een afwijkende staaf-/kolomkleur, bv. {3:"#ff6813"}
+    labelKleur: {},           // per label-index een afwijkende tékstkleur voor het label
   },
   fotoActief: false,
   foto: { img:null, panX:0.5, panY:0.5, zoom:1, contrast:100, transp:0 },   // pan = fractie [0..1], formaat-onafhankelijk
@@ -653,7 +685,7 @@ function extractFromText(text){
 }
 
 /* ============================================================================
-   5b. EXCEL-LEZER (.xlsx) — native, zonder externe library.
+   6. EXCEL-LEZER (.xlsx) — native, zonder externe library.
    Pakt het xlsx-zipbestand uit met DecompressionStream en leest de XML zelf,
    en levert een tab-gescheiden tekst die de bestaande parser inleest.
    ========================================================================== */
@@ -765,7 +797,7 @@ async function readXlsx(file){
 }
 
 /* ============================================================================
-   6. CHART ENGINE  (canvas)
+   7. CHART ENGINE  (canvas)
    ========================================================================== */
 function relLum(hex){
   const c = hex.replace("#",""); const n = c.length===3 ? c.split("").map(x=>x+x).join("") : c;
@@ -784,6 +816,10 @@ function catColor(i){ return state.kleuren.reeks[i] || HUISSTIJL.reeksVolgorde[i
 // kleur voor een staaf/kolom: een uitgelichte losse kleur per label overschrijft de reekskleur (bij één reeks)
 function barColor(catIdx, seriesIdx, ns){ const u=state.kleuren.uitgelicht;
   if(ns===1 && u && u[catIdx]!=null) return u[catIdx]; return catColor(seriesIdx); }
+// tekstkleur voor het i-e categorielabel; valt terug op fb (en op de gewone
+// tekstkleur als de gekozen kleur onleesbaar is tegen de ondergrond)
+function labelInk(i, fb){ const c=state.kleuren.labelKleur[i]; if(!c) return fb;
+  return contrastRatio(c, currentSurface())>=2.5 ? c : state.kleuren.tekst; }
 // WCAG-contrastratio tussen twee kleuren
 function contrastRatio(a,b){ const L1=relLum(a),L2=relLum(b),hi=Math.max(L1,L2),lo=Math.min(L1,L2); return (hi+0.05)/(lo+0.05); }
 // leesbare inkt (donker of wit) tegen achtergrond bg — voor labels ín een gekleurd vlak
@@ -812,18 +848,6 @@ function niceNum(x,round){
   if(round){ nf = frac<1.5?1 : frac<3?2 : frac<7?5 : 10; }
   else     { nf = frac<=1?1 : frac<=2?2 : frac<=5?5 : 10; }
   return nf*Math.pow(10,exp);
-}
-function roundRectTop(ctx,x,y,w,h,r){
-  r=Math.min(r,Math.abs(w)/2,Math.abs(h));
-  ctx.beginPath();
-  ctx.moveTo(x,y+h); ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
-  ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r); ctx.lineTo(x+w,y+h); ctx.closePath();
-}
-function roundRectRight(ctx,x,y,w,h,r){
-  r=Math.min(r,Math.abs(h)/2,Math.abs(w));
-  ctx.beginPath();
-  ctx.moveTo(x,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
-  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r); ctx.lineTo(x,y+h); ctx.closePath();
 }
 function wrapText(ctx,text,maxW){
   const words=text.split(" "); const lines=[]; let line="";
@@ -1009,7 +1033,7 @@ function drawBars(ctx,plot,data,C,horizontal){
           ctx.fillText(fmtNum(v), x+bwe/2, top-Math.round(6*S)); ctx.textBaseline="top";
         }
       }
-      ctx.fillStyle=muted; ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
+      ctx.fillStyle=labelInk(i,muted); ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
       const lbl=data.labels[i]||"";
       ctx.fillText(fitLabel(ctx,lbl,band-6*S), p.x+band*i+band/2, p.y+p.h+Math.round(12*S));
     }
@@ -1047,7 +1071,7 @@ function drawBars(ctx,plot,data,C,horizontal){
           ctx.fillText(fmtNum(v), Math.max(vx,zeroX)+Math.round(8*S), y+bhe/2);
         }
       }
-      ctx.fillStyle=ink; ctx.font=`600 ${Math.round(34*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
+      ctx.fillStyle=labelInk(i,ink); ctx.font=`600 ${Math.round(34*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
       ctx.fillText(fitLabel(ctx,data.labels[i]||"",lw-10*S), plot.x+lw-Math.round(12*S), gy+groupH/2);
     }
     ctx.textAlign="left"; ctx.textBaseline="top";
@@ -1100,7 +1124,7 @@ function drawStacked(ctx,plot,data,C){
       drawRR(ctx,x,y1,bw,(y0-y1)-gap, Math.round(5*S), top==="top"?"top":"flat");
       acc+=v;
     }
-    ctx.fillStyle=muted; ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
+    ctx.fillStyle=labelInk(i,muted); ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
     ctx.fillText(fitLabel(ctx,data.labels[i]||"",band-6*S), p.x+band*i+band/2, p.y+p.h+Math.round(12*S));
   }
   ctx.strokeStyle=axis; ctx.lineWidth=Math.max(1.5,1.5*S);
@@ -1150,9 +1174,10 @@ function drawLine(ctx,plot,data,C,area){
     });
   }
   // x-labels
-  ctx.fillStyle=muted; ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
+  ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
   const every=Math.ceil(nl/12);
-  data.labels.forEach((l,i)=>{ if(i%every===0) ctx.fillText(fitLabel(ctx,l,step*1.4||120), X(i), p.y+p.h+Math.round(12*S)); });
+  data.labels.forEach((l,i)=>{ if(i%every===0){ ctx.fillStyle=labelInk(i,muted);
+    ctx.fillText(fitLabel(ctx,l,step*1.4||120), X(i), p.y+p.h+Math.round(12*S)); } });
   ctx.strokeStyle=axis; ctx.lineWidth=Math.max(1.5,1.5*S);
   ctx.beginPath(); ctx.moveTo(p.x,p.y+p.h); ctx.lineTo(p.x+p.w,p.y+p.h); ctx.stroke();
   ctx.textAlign="left";
@@ -1161,7 +1186,7 @@ function drawLine(ctx,plot,data,C,area){
 function drawPie(ctx,plot,data,C,innerRatio){
   const {S,F,ink,muted,darkBg,transp}=C;
   const s=data.series[0];
-  const items=data.labels.map((l,i)=>({l, v:Math.max(0,s.waarden[i]||0), c:catColor(i)}))
+  const items=data.labels.map((l,i)=>({l, v:Math.max(0,s.waarden[i]||0), c:catColor(i), idx:i}))
                          .filter(it=>it.v>0);
   if(!items.length){                                              // geen positieve waarden -> melding i.p.v. leeg canvas
     ctx.fillStyle=muted; ctx.textAlign="center"; ctx.font=`500 ${Math.round(30*S)}px ${F}`;
@@ -1210,7 +1235,7 @@ function drawPie(ctx,plot,data,C,innerRatio){
   shown.forEach(it=>{
     ctx.fillStyle=it.c; const b=Math.round(24*S);
     ctx.beginPath(); ctx.roundRect?ctx.roundRect(lx,ly-b/2,b,b,Math.round(6*S)):ctx.rect(lx,ly-b/2,b,b); ctx.fill();
-    ctx.fillStyle=ink;
+    ctx.fillStyle=labelInk(it.idx,ink);
     ctx.fillText(fitLabel(ctx,`${it.l}`,plot.w*0.30)+"  ", lx+b+Math.round(12*S), ly);
     const tw=ctx.measureText(it.l).width;
     ctx.fillStyle=muted; ctx.fillText(fmtNum(it.v)+" · "+Math.round(it.v/total*100)+"%", lx+b+Math.round(12*S)+tw+Math.round(16*S), ly);
@@ -1243,7 +1268,7 @@ function drawLollipop(ctx,plot,data,C){
     ctx.strokeStyle=col; ctx.lineWidth=Math.max(2,3*S); ctx.lineCap="round";
     ctx.beginPath(); ctx.moveTo(zeroX,cy); ctx.lineTo(vx,cy); ctx.stroke();
     ctx.fillStyle=col; ctx.beginPath(); ctx.arc(vx,cy,Math.max(6,9*S),0,7); ctx.fill();
-    ctx.fillStyle=ink; ctx.font=`600 ${Math.round(35*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
+    ctx.fillStyle=labelInk(it.idx,ink); ctx.font=`600 ${Math.round(35*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
     ctx.fillText(fitLabel(ctx,it.l,lw-10*S), plot.x+lw-Math.round(14*S), cy);
     if(state.toonWaarden){ ctx.textAlign="left"; ctx.font=`700 ${Math.round(33*S)}px ${F}`;
       ctx.fillText(fmtNum(it.v), vx+Math.round(16*S), cy); }
@@ -1311,7 +1336,7 @@ function drawDashboard(ctx,plot,data,C){
     while(fs>10 && ctx.measureText(txt).width>rInner*1.9){ fs-=2; ctx.font=`800 ${fs}px ${F}`; }
     ctx.fillText(txt, cx, cy);
     // label onder de ring
-    ctx.fillStyle=ink; ctx.textBaseline="top"; ctx.textAlign="center"; ctx.font=`600 ${Math.round(30*S)}px ${F}`;
+    ctx.fillStyle=labelInk(it.i,ink); ctx.textBaseline="top"; ctx.textAlign="center"; ctx.font=`600 ${Math.round(30*S)}px ${F}`;
     for(const [li,line] of wrapText(ctx, it.l, cellW*0.92).slice(0,2).entries())
       ctx.fillText(line, cx, cy+R+Math.round(16*S)+li*Math.round(34*S));
   });
@@ -1319,7 +1344,7 @@ function drawDashboard(ctx,plot,data,C){
 }
 
 /* ============================================================================
-   7. UI-KOPPELING
+   8. UI-KOPPELING  (tabel, kleuren, formaten, undo, bestanden, foto)
    ========================================================================== */
 const $=id=>document.getElementById(id);
 
@@ -1351,7 +1376,7 @@ function buildDataTable(){
   t.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.del;
     pushUndo();                                                   // verwijderde rij is terug te halen met Ctrl+Z
     state.data.labels.splice(i,1); state.data.series.forEach(s=>s.waarden.splice(i,1));
-    state.kleuren.uitgelicht={};                                  // label-indexen verschuiven -> uitlichting resetten
+    state.kleuren.uitgelicht={}; state.kleuren.labelKleur={};     // label-indexen verschuiven -> resetten
     buildDataTable(); buildColorControls(); render(); });
   t.querySelectorAll("[data-dels]").forEach(b=>b.onclick=()=>{ const j=+b.dataset.dels;
     if(state.data.series.length<=1) return;                       // minstens één reeks houden
@@ -1421,25 +1446,33 @@ function buildColorControls(){
   });
 
   // uitlichten: losse kleur per staaf/kolom (alleen zinvol bij één reeks, staaf/kolom/rangschikking)
-  const hlGrp=$("highlightGrp"), hlRows=$("highlightRows");
-  const kanUitlichten = ["kolom","staaf","lollipop"].includes(state.type) && state.data.series.length===1;
-  if(kanUitlichten){
-    hlGrp.classList.remove("hidden"); hlRows.innerHTML="";
-    state.data.labels.forEach((lab,i)=>{
-      const row=document.createElement("div"); row.className="seriescolor";
-      const nm=document.createElement("span"); nm.className="nm"; nm.textContent=lab||("Rij "+(i+1)); row.appendChild(nm);
-      const sr=document.createElement("div"); sr.className="swatchrow";
-      const std=document.createElement("button"); std.type="button";
-      std.className="chip-standaard"+(state.kleuren.uitgelicht[i]==null?" on":"");
-      std.textContent="standaard"; std.title="Zelfde kleur als de rest";
-      std.onclick=()=>{ delete state.kleuren.uitgelicht[i]; buildColorControls(); render(); };
-      sr.appendChild(std);
-      HUISSTIJL.waardePalet.forEach(c=>sr.appendChild(swatch(c.hex,c.naam, state.kleuren.uitgelicht[i]===c.hex, ()=>{
-        state.kleuren.uitgelicht[i]=c.hex; buildColorControls(); render();
-      })));
-      row.appendChild(sr); hlRows.appendChild(row);
-    });
-  } else { hlGrp.classList.add("hidden"); hlRows.innerHTML=""; }
+  buildPerLabelRows("highlightGrp","highlightRows", state.kleuren.uitgelicht,
+    ["kolom","staaf","lollipop"].includes(state.type) && state.data.series.length===1,
+    "Zelfde kleur als de rest");
+  // labelkleur: eigen tekstkleur per categorielabel (alle types met zichtbare labels)
+  buildPerLabelRows("labelKleurGrp","labelKleurRows", state.kleuren.labelKleur,
+    state.type!=="kpi" && state.data.labels.length>0,
+    "Gewone tekstkleur");
+}
+/* gedeelde bouwer voor "per label een kleur"-rijen (uitlichten + labelkleur) */
+function buildPerLabelRows(grpId, rowsId, kleurMap, tonen, stdTitel){
+  const grp=$(grpId), rows=$(rowsId);
+  if(!tonen){ grp.classList.add("hidden"); rows.innerHTML=""; return; }
+  grp.classList.remove("hidden"); rows.innerHTML="";
+  state.data.labels.forEach((lab,i)=>{
+    const row=document.createElement("div"); row.className="seriescolor";
+    const nm=document.createElement("span"); nm.className="nm"; nm.textContent=lab||("Rij "+(i+1)); row.appendChild(nm);
+    const sr=document.createElement("div"); sr.className="swatchrow";
+    const std=document.createElement("button"); std.type="button";
+    std.className="chip-standaard"+(kleurMap[i]==null?" on":"");
+    std.textContent="standaard"; std.title=stdTitel;
+    std.onclick=()=>{ delete kleurMap[i]; buildColorControls(); render(); };
+    sr.appendChild(std);
+    HUISSTIJL.waardePalet.forEach(c=>sr.appendChild(swatch(c.hex,c.naam, kleurMap[i]===c.hex, ()=>{
+      kleurMap[i]=c.hex; buildColorControls(); render();
+    })));
+    row.appendChild(sr); rows.appendChild(row);
+  });
 }
 function swatch(hex,title,on,fn){
   const s=document.createElement("div"); s.className="swatch"+(on?" on":"");
@@ -1495,7 +1528,7 @@ function showData(p){
   applyHints(p);
   if(state.gegenereerd && state.data && state.data.labels.length) pushUndo();   // vorige dataset terug te halen
   const vorige=state.kleuren.reeks||[];
-  state.kleuren.uitgelicht={};        // uitlichting hoort bij de vorige dataset -> resetten
+  state.kleuren.uitgelicht={}; state.kleuren.labelKleur={};   // horen bij de vorige dataset -> resetten
   state.data=p;
   state.kleuren.reeks=p.series.map((_,i)=> vorige[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
   state.gegenereerd=true;
@@ -1507,11 +1540,12 @@ function showData(p){
 /* ---- ongedaan maken (Ctrl+Z) / opnieuw (Ctrl+Y) ---- */
 const undoStack=[], redoStack=[]; let pendingSnap=null;
 function snapshot(){ return JSON.parse(JSON.stringify({ data:state.data,
-  reeks:state.kleuren.reeks, uitgelicht:state.kleuren.uitgelicht })); }
+  reeks:state.kleuren.reeks, uitgelicht:state.kleuren.uitgelicht, labelKleur:state.kleuren.labelKleur })); }
 function updateUndoBtn(){ const b=$("btnUndo"); if(b) b.disabled=!undoStack.length; }
 function pushUndo(){ undoStack.push(snapshot()); if(undoStack.length>50) undoStack.shift();
   redoStack.length=0; pendingSnap=null; updateUndoBtn(); }
-function restoreSnap(s){ state.data=s.data; state.kleuren.reeks=s.reeks; state.kleuren.uitgelicht=s.uitgelicht||{};
+function restoreSnap(s){ state.data=s.data; state.kleuren.reeks=s.reeks;
+  state.kleuren.uitgelicht=s.uitgelicht||{}; state.kleuren.labelKleur=s.labelKleur||{}; pendingSnap=null;
   buildDataTable(); buildColorControls(); render(); updateUndoBtn(); }
 function doUndo(){ if(!undoStack.length) return; redoStack.push(snapshot()); restoreSnap(undoStack.pop()); }
 function doRedo(){ if(!redoStack.length) return; undoStack.push(snapshot()); restoreSnap(redoStack.pop()); updateUndoBtn(); }
@@ -1670,3 +1704,5 @@ buildTypePicker();
     if(h>0 && matchMedia("(min-width:921px)").matches){ cr.classList.add("manual"); cr.style.setProperty("--previewH", h+"px"); } }catch(_){}
 })();
 </script>
+</body>
+</html>
