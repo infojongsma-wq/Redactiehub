@@ -212,6 +212,7 @@
                      linear-gradient(45deg,#c2cad6 25%,transparent 25%,transparent 75%,#c2cad6 75%);
     background-size:10px 10px;background-position:0 0,5px 5px;
   }
+  .editkop{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .empty{padding:60px 20px;text-align:center;color:var(--ink-2)}
   .empty svg{width:64px;height:64px;opacity:.35;margin-bottom:10px}
 
@@ -260,7 +261,7 @@
 <header class="app">
   <span class="logo">oost</span>
   <h1>Grafiekmaker · Redactiehub</h1>
-  <button class="hdrbtn" id="btnGalerij" title="Bewaarde grafieken van de redactie">🖼 Galerij</button>
+  <button class="hdrbtn" id="btnGalerij" title="Bewaarde grafieken van de redactie">Bibliotheek</button>
   <span class="sub">datavisualisatie in de huisstijl</span>
 </header>
 
@@ -340,11 +341,25 @@
     </div>
 
     <details class="tips">
-      <summary>Tips &amp; huisstijl instellen</summary>
+      <summary>Tips — korte handleiding</summary>
       <div class="note">
-        De <b>exacte RTV Oost-huisstijlkleuren</b> staan ingesteld (blok <code>HUISSTIJL</code> bovenaan de code),
-        met <b>Oost-blauw</b> als hoofdkleur. Het lettertype <b>Roobert</b> wordt gebruikt; op een computer zonder
-        Roobert valt de tool netjes terug op een systeemletter. De reeksvolgorde is kleurenblind-veilig getoetst.
+        <b>1. Cijfers invullen.</b> Plak data uit Excel (kopiëren/plakken werkt direct), open een
+        <b>Excel- of CSV-bestand</b> met “📄 Bestand / Excel kiezen…”, of typ het zelf. Je kunt ook meteen in de
+        tabel <b>Data aanpassen</b> beginnen (rechts): 2 lege kolommen en 4 rijen staan klaar. Alleen lopende tekst
+        met getallen? Klik “🔍 Cijfers uit tekst halen”.<br><br>
+        <b>2. Teksten &amp; grafiek kiezen.</b> Vul <b>Titel</b>, <b>Ondertitel</b> en <b>Bron</b> in (stap 2), kies een
+        grafiektype (stap 3) en klik <b>Genereren</b>.<br><br>
+        <b>3. Data aanpassen.</b> Wijzig cijfers in de tabel en klik <b>Grafiek bijwerken</b> (rechtsboven).
+        Met <b>+ Rij</b>/<b>+ Reeks</b> voeg je toe, met <b>↑/↓</b> verschuif je de volgorde, en <b>✕</b> verwijdert.
+        Foutje? <b>Ctrl+Z</b> (↶ Ongedaan) haalt het terug.<br><br>
+        <b>4. Kleuren &amp; waarden (stap 4).</b> Kies achtergrond (huisstijlkleur, <b>transparant</b> of een <b>foto</b>),
+        tekstkleur en de kleur per reeks. Met <b>Uitlichten</b> geef je één losse staaf/kolom een eigen kleur
+        (bijv. alleen Overijssel), met <b>Labelkleur</b> kleur je de labeltekst. Vink <b>Waarden tonen</b> aan/uit.<br><br>
+        <b>5. Formaat, opslaan &amp; delen.</b> Kies het formaat (stap 5: liggend, vierkant of verticaal).
+        <b>Download PNG</b> of <b>Kopieer</b> naar het klembord. Met <b>☁ In bibliotheek</b> bewaar je de grafiek voor
+        de hele redactie; via <b>Bibliotheek</b> (bovenin) bekijk, download of <b>✎ bewerk</b> je bewaarde grafieken opnieuw.<br><br>
+        <span style="color:var(--ink-2)">Huisstijl: <b>Oost-blauw</b> als hoofdkleur en het lettertype <b>Roobert</b> staan
+        vast ingesteld; de reeksvolgorde is kleurenblind-veilig getoetst.</span>
       </div>
     </details>
 
@@ -366,21 +381,23 @@
         <div class="btnrow">
           <button class="btn primary" id="btnPng" style="flex:1">⬇ Download PNG</button>
           <button class="btn" id="btnCopy">📋 Kopieer</button>
-          <button class="btn" id="btnSave" title="Bewaar deze grafiek in de gedeelde galerij">☁ In galerij</button>
+          <button class="btn" id="btnSave" title="Bewaar deze grafiek in de gedeelde bibliotheek">☁ In bibliotheek</button>
         </div>
       </div>
       <div id="splitter" title="Sleep om het voorbeeld groter of kleiner te maken · dubbelklik = automatisch"><span></span></div>
     </div>
 
     <div class="card hidden" id="editcard">
-      <h2>Data aanpassen</h2>
-      <p class="hint" style="margin-top:0">Dit zijn de verwerkte cijfers. Pas ze aan en klik op <b>Grafiek bijwerken</b>.</p>
+      <div class="editkop">
+        <h2 style="margin:0">Data aanpassen</h2>
+        <button class="btn primary" id="btnUpdate">Grafiek bijwerken</button>
+      </div>
+      <p class="hint" style="margin-top:6px">Dit zijn de verwerkte cijfers. Pas ze aan en klik op <b>Grafiek bijwerken</b>.</p>
       <div class="tablewrap" style="overflow-x:auto"><table class="data" id="datatable"></table></div>
       <div class="btnrow" style="margin-top:10px">
         <button class="btn" id="btnAddRow">+ Rij</button>
         <button class="btn" id="btnAddSeries">+ Reeks</button>
         <button class="btn" id="btnUndo" title="Ongedaan maken (Ctrl+Z) — haalt ook verwijderde rijen/reeksen terug" disabled>↶ Ongedaan</button>
-        <button class="btn primary" id="btnUpdate" style="margin-left:auto">Grafiek bijwerken</button>
       </div>
     </div>
 
@@ -391,7 +408,7 @@
 <div id="galerijModal" class="gmodal hidden" role="dialog" aria-label="Galerij">
   <div class="gmodal-inner">
     <div class="gmodal-kop">
-      <h2 style="margin:0;font-size:16px">🖼 Galerij — bewaarde grafieken</h2>
+      <h2 style="margin:0;font-size:16px">Bibliotheek — bewaarde grafieken</h2>
       <button class="btn" id="btnGalerijVerversen">↻ Verversen</button>
       <button class="btn" id="btnGalerijSluiten" style="margin-left:auto">✕ Sluiten</button>
     </div>
@@ -454,16 +471,18 @@ const HUISSTIJL = {
    2. GRAFIEKTYPES
    ========================================================================== */
 const CHARTS = [
-  { id:"kolom",     naam:"Kolommen",        icon:iconKolom },
-  { id:"staaf",     naam:"Balken",          icon:iconStaaf },
-  { id:"gestapeld", naam:"Gestapeld",       icon:iconGestapeld },
-  { id:"lijn",      naam:"Lijn",            icon:iconLijn },
-  { id:"vlak",      naam:"Vlak",            icon:iconVlak },
-  { id:"taart",     naam:"Taart",           icon:iconTaart },
-  { id:"donut",     naam:"Donut",           icon:iconDonut },
-  { id:"lollipop",  naam:"Rangschikking",   icon:iconLolli },
-  { id:"kpi",       naam:"Groot getal",     icon:iconKpi },
-  { id:"dashboard", naam:"Dashboard",       icon:iconDashboard },
+  { id:"kolom",     naam:"Kolommen",         icon:iconKolom },
+  { id:"staaf",     naam:"Balken",           icon:iconStaaf },
+  { id:"gestapeld", naam:"Gestapeld",        icon:iconGestapeld },
+  { id:"stapel100h",naam:"100% horizontaal", icon:iconStapel100 },
+  { id:"combo",     naam:"Kolom + lijn",     icon:iconCombo },
+  { id:"lijn",      naam:"Lijn",             icon:iconLijn },
+  { id:"vlak",      naam:"Vlak",             icon:iconVlak },
+  { id:"taart",     naam:"Taart",            icon:iconTaart },
+  { id:"donut",     naam:"Donut",            icon:iconDonut },
+  { id:"bellen",    naam:"Bellen",           icon:iconBellen },
+  { id:"lollipop",  naam:"Rangschikking",    icon:iconLolli },
+  { id:"dashboard", naam:"Dashboard",        icon:iconDashboard },
 ];
 
 /* ============================================================================
@@ -484,6 +503,7 @@ const state = {
   foto: { img:null, panX:0.5, panY:0.5, zoom:1, contrast:100, transp:0 },   // pan = fractie [0..1], formaat-onafhankelijk
   toonWaarden: true,
   gegenereerd: false,
+  bibliotheekPad: null,   // pad van de grafiek die (uit de bibliotheek) bewerkt wordt; null = nieuw
 };
 
 const FORMATEN = [
@@ -960,11 +980,11 @@ function render(){
   const hasData = data.labels.length && data.series.length && data.series.some(s=>s.waarden.some(v=>v));
   if(!hasData){
     ctx.fillStyle=muted; ctx.textAlign="center"; ctx.font=`500 ${Math.round(30*S)}px ${F}`;
-    ctx.fillText("Geen data", w/2, plot.y+plot.h/2); ctx.textAlign="left"; return;
+    ctx.fillText("Vul cijfers in de tabel in en klik ‘Grafiek bijwerken’", w/2, plot.y+plot.h/2); ctx.textAlign="left"; return;
   }
 
   // reeks-legenda alleen bij grafiektypes met meerdere reeksen naast elkaar
-  const legendTypes = ["kolom","staaf","gestapeld","lijn","vlak"];
+  const legendTypes = ["kolom","staaf","gestapeld","stapel100h","combo","lijn","vlak"];
   const showTopLegend = data.series.length>1 && legendTypes.includes(state.type);
   const legendH = showTopLegend ? drawLegend(ctx,plot,S,F,ink) : 0;
   const p2={ ...plot, y:plot.y+legendH, h:plot.h-legendH };
@@ -978,8 +998,10 @@ function render(){
     case "vlak":      drawLine(ctx,p2,data,ctxColors,true);  break;
     case "taart":     drawPie(ctx,p2,data,ctxColors,0);      break;
     case "donut":     drawPie(ctx,p2,data,ctxColors,0.58);   break;
+    case "stapel100h":drawStacked100h(ctx,p2,data,ctxColors);break;
+    case "combo":     drawCombo(ctx,p2,data,ctxColors);      break;
+    case "bellen":    drawBubbels(ctx,p2,data,ctxColors);    break;
     case "lollipop":  drawLollipop(ctx,p2,data,ctxColors);   break;
-    case "kpi":       drawKpi(ctx,p2,data,ctxColors);        break;
     case "dashboard": drawDashboard(ctx,p2,data,ctxColors);  break;
   }
 }
@@ -1223,7 +1245,7 @@ function drawLine(ctx,plot,data,C,area){
 }
 
 function drawPie(ctx,plot,data,C,innerRatio){
-  const {S,F,ink,muted,darkBg,transp}=C;
+  const {S,F,ink,muted,darkBg,transp,foto}=C;
   const s=data.series[0];
   const items=data.labels.map((l,i)=>({l, v:Math.max(0,s.waarden[i]||0), c:catColor(i), idx:i}))
                          .filter(it=>it.v>0);
@@ -1247,7 +1269,7 @@ function drawPie(ctx,plot,data,C,innerRatio){
     }
     ctx.closePath();
     ctx.fillStyle=it.c; ctx.fill();
-    if(!transp){ ctx.strokeStyle=surf; ctx.lineWidth=Math.max(2,3*S); ctx.stroke(); }  // transparant: geen randlijn om de segmenten
+    if(!transp && !foto){ ctx.strokeStyle=surf; ctx.lineWidth=Math.max(2,3*S); ctx.stroke(); }  // transparant/foto: geen randlijn om de segmenten
     // percentage-label
     if(ang>0.28){
       const mid=a+ang/2, lr=rInner>0? (R+rInner)/2 : R*0.62;
@@ -1315,21 +1337,6 @@ function drawLollipop(ctx,plot,data,C){
   ctx.textAlign="left"; ctx.textBaseline="top";
 }
 
-function drawKpi(ctx,plot,data,C){
-  const {S,F,ink}=C;
-  const s=data.series[0];
-  let idx=s.waarden.findIndex(x=>x!=null && !isNaN(x)); if(idx<0) idx=0;   // eerste geldige rij (0 is geldig)
-  const v=s.waarden[idx] ?? 0;
-  const label=data.labels[idx]||s.naam||"";                                // label hoort bij hetzelfde getal
-  ctx.textAlign="center"; ctx.textBaseline="alphabetic";
-  const numTxt=fmtNum(v), maxW=plot.w*0.9;
-  let fs=Math.round(220*S); ctx.fillStyle=markColor(catColor(0)); ctx.font=`800 ${fs}px ${F}`;
-  while(fs>12 && ctx.measureText(numTxt).width>maxW){ fs-=4; ctx.font=`800 ${fs}px ${F}`; }  // krimp zodat het past
-  ctx.fillText(numTxt, plot.x+plot.w/2, plot.y+plot.h*0.56);
-  ctx.fillStyle=ink; ctx.font=`600 ${Math.round(40*S)}px ${F}`; ctx.textBaseline="top";
-  ctx.fillText(fitLabel(ctx,label,plot.w*0.9), plot.x+plot.w/2, plot.y+plot.h*0.6);
-  ctx.textAlign="left";
-}
 
 // Dashboard: rij ring-meters, één per categorie (eerste reeks). Elk toont het cijfer in het midden.
 function drawDashboard(ctx,plot,data,C){
@@ -1345,14 +1352,18 @@ function drawDashboard(ctx,plot,data,C){
   const anyDec = vals.some(v=> Math.abs(v-Math.round(v))>1e-9);
   const fmtG = v => (anyDec ? v.toLocaleString("nl-NL",{minimumFractionDigits:1,maximumFractionDigits:1})
                             : v.toLocaleString("nl-NL",{maximumFractionDigits:0}));
+  // gebalanceerd raster: max 4 per rij; laatste (deel)rij wordt gecentreerd
   const n=items.length;
-  let cols=Math.min(n, Math.max(1, Math.floor(plot.w/(240*S))), 5);
-  const rows=Math.ceil(n/cols);
+  const maxPerRij=4;
+  const rows=Math.max(1, Math.ceil(n/maxPerRij));
+  const cols=Math.ceil(n/rows);                 // 6->3+3, 7->4+3, 4->4, 8->4+4, 5->3+2
   const cellW=plot.w/cols, cellH=plot.h/rows;
   const track = darkBg ? "rgba(255,255,255,.20)" : "rgba(19,23,32,.12)";
   items.forEach((it,k)=>{
-    const r=Math.floor(k/cols), c=k%cols;
-    const cx=plot.x + c*cellW + cellW/2;
+    const r=Math.floor(k/cols), cInRij=k - r*cols;
+    const inDezeRij=Math.min(cols, n - r*cols);   // aantal in deze rij (laatste kan minder zijn)
+    const xOffset=(cols - inDezeRij)/2 * cellW;    // centreer de rij
+    const cx=plot.x + xOffset + cInRij*cellW + cellW/2;
     const cy=plot.y + r*cellH + cellH*0.40;
     const R=Math.min(cellW*0.40, cellH*0.34);
     const th=Math.max(6*S, R*0.42), rInner=R-th;
@@ -1378,6 +1389,103 @@ function drawDashboard(ctx,plot,data,C){
     ctx.fillStyle=labelInk(it.i,ink); ctx.textBaseline="top"; ctx.textAlign="center"; ctx.font=`600 ${Math.round(30*S)}px ${F}`;
     for(const [li,line] of wrapText(ctx, it.l, cellW*0.92).slice(0,2).entries())
       ctx.fillText(line, cx, cy+R+Math.round(16*S)+li*Math.round(34*S));
+  });
+  ctx.textAlign="left"; ctx.textBaseline="top";
+}
+
+// 100% gestapeld, horizontaal: elke categorie een volle balk, verdeeld per reeks
+function drawStacked100h(ctx,plot,data,C){
+  const {S,F,ink,muted,grid,axis}=C;
+  const nl=data.labels.length, ns=data.series.length;
+  const totals=data.labels.map((_,i)=>data.series.reduce((a,s)=>a+Math.max(0,s.waarden[i]||0),0));
+  if(Math.max(...totals)<=0){ ctx.fillStyle=muted; ctx.textAlign="center"; ctx.font=`500 ${Math.round(30*S)}px ${F}`;
+    ctx.fillText("100%-staaf kan geen negatieve/lege data tonen", plot.x+plot.w/2, plot.y+plot.h/2); ctx.textAlign="left"; return; }
+  ctx.font=`600 ${Math.round(34*S)}px ${F}`;
+  let lw=0; data.labels.forEach(l=>lw=Math.max(lw,ctx.measureText(l).width)); lw=Math.min(lw+20*S, plot.w*0.32);
+  const p={x:plot.x+lw, y:plot.y, w:plot.w-lw, h:plot.h-Math.round(30*S)};
+  ctx.strokeStyle=grid; ctx.lineWidth=Math.max(1,1*S); ctx.font=`500 ${Math.round(32*S)}px ${F}`;
+  ctx.textBaseline="top"; ctx.textAlign="center";
+  for(let t=0;t<=100;t+=25){ const x=p.x+(t/100)*p.w;
+    ctx.beginPath(); ctx.moveTo(x,p.y); ctx.lineTo(x,p.y+p.h); ctx.stroke();
+    ctx.fillStyle=muted; ctx.fillText(t+"%", x, p.y+p.h+Math.round(8*S)); }
+  const band=p.h/nl, bh=band*0.62;
+  for(let i=0;i<nl;i++){
+    const gy=p.y+band*i+(band-bh)/2, tot=totals[i]||1; let acc=0;
+    for(let j=0;j<ns;j++){
+      const v=Math.max(0,data.series[j].waarden[i]||0); if(v<=0) continue;
+      const frac=v/tot, x0=p.x+acc*p.w, x1=p.x+(acc+frac)*p.w, gap=(j<ns-1?1*S:0);
+      ctx.fillStyle=catColor(j);
+      drawRR(ctx,x0,gy,(x1-x0)-gap,bh, Math.round(4*S), ns===1?"top":(j===0?"left":(acc+frac>=0.999?"right":"flat")));
+      if(frac>0.09){ ctx.fillStyle=bestInk(catColor(j)); ctx.font=`700 ${Math.round(24*S)}px ${F}`;
+        ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(Math.round(frac*100)+"%", (x0+x1)/2, gy+bh/2); }
+      acc+=frac;
+    }
+    ctx.fillStyle=labelInk(i,ink); ctx.font=`600 ${Math.round(34*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
+    ctx.fillText(fitLabel(ctx,data.labels[i]||"",lw-10*S), plot.x+lw-Math.round(12*S), gy+bh/2);
+  }
+  ctx.textAlign="left"; ctx.textBaseline="top";
+}
+
+// Kolom + lijn: eerste reeks als kolommen, overige reeksen als lijn (gedeelde as)
+function drawCombo(ctx,plot,data,C){
+  const {S,F,ink,muted,axis}=C;
+  const nl=data.labels.length, ns=data.series.length;
+  let dmin=0,dmax=0;
+  data.series.forEach(s=>s.waarden.forEach(v=>{ if(v==null)return; dmax=Math.max(dmax,v); dmin=Math.min(dmin,v); }));
+  const sc=niceScale(dmin,dmax,6);
+  const axW=measureYAxis(ctx,sc,C,fmtNum);
+  const p={x:plot.x+axW, y:plot.y, w:plot.w-axW, h:plot.h-Math.round(44*S)};
+  yAxisAndGrid(ctx,p,sc,C,fmtNum);
+  const band=p.w/nl, Y=v=>p.y+p.h-((v-sc.min)/(sc.max-sc.min))*p.h, X=i=>p.x+band*i+band/2, zeroY=Y(0), bw=band*0.5;
+  for(let i=0;i<nl;i++){
+    const v=data.series[0].waarden[i]; if(v==null) continue;
+    const x=p.x+band*i+(band-bw)/2, vy=Y(v);
+    ctx.fillStyle=catColor(0);
+    drawRR(ctx,x,Math.min(vy,zeroY),bw,Math.abs(vy-zeroY),Math.round(5*S), v>=0?"top":"bottom");
+    if(state.toonWaarden && nl<=20){ ctx.fillStyle=ink; ctx.font=`700 ${Math.round(30*S)}px ${F}`;
+      ctx.textAlign="center"; ctx.textBaseline="bottom"; ctx.fillText(fmtNum(v), x+bw/2, Math.min(vy,zeroY)-Math.round(6*S)); ctx.textBaseline="top"; }
+  }
+  for(let j=1;j<ns;j++){
+    const col=catColor(j), vals=data.series[j].waarden;
+    const pts=vals.map((v,i)=> v==null? null : [X(i),Y(v)]);
+    ctx.strokeStyle=col; ctx.lineWidth=Math.max(2,3.5*S); ctx.lineJoin="round"; ctx.lineCap="round";
+    ctx.beginPath(); let started=false;
+    pts.forEach(pt=>{ if(!pt){started=false;return;} if(started) ctx.lineTo(pt[0],pt[1]); else { ctx.moveTo(pt[0],pt[1]); started=true; } });
+    ctx.stroke();
+    pts.forEach((pt,i)=>{ if(!pt)return;
+      ctx.fillStyle=currentSurface(); ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(5,6*S),0,7); ctx.fill();
+      ctx.fillStyle=col; ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(3.5,4.5*S),0,7); ctx.fill();
+      if(state.toonWaarden && nl<=14){ ctx.fillStyle=ink; ctx.font=`700 ${Math.round(28*S)}px ${F}`;
+        ctx.textAlign="center"; ctx.textBaseline="bottom"; ctx.fillText(fmtNum(vals[i]), pt[0], pt[1]-Math.round(12*S)); ctx.textBaseline="top"; } });
+  }
+  ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
+  for(let i=0;i<nl;i++){ ctx.fillStyle=labelInk(i,muted); ctx.fillText(fitLabel(ctx,data.labels[i]||"",band-6*S), X(i), p.y+p.h+Math.round(12*S)); }
+  ctx.strokeStyle=axis; ctx.lineWidth=Math.max(1.5,1.5*S);
+  ctx.beginPath(); ctx.moveTo(p.x,zeroY); ctx.lineTo(p.x+p.w,zeroY); ctx.stroke();
+  ctx.textAlign="left";
+}
+
+// Bellendiagram: per categorie een cirkel met oppervlak evenredig aan de waarde
+function drawBubbels(ctx,plot,data,C){
+  const {S,F,ink,muted}=C;
+  const s=data.series[0];
+  const items=(s?data.labels:[]).map((l,i)=>({ l:l||("Categorie "+(i+1)), v:Math.max(0,s.waarden[i]||0), i }));
+  if(!items.length || !items.some(it=>it.v>0)){ ctx.fillStyle=muted; ctx.textAlign="center"; ctx.font=`500 ${Math.round(30*S)}px ${F}`;
+    ctx.fillText("Geen positieve waarden voor een bellendiagram", plot.x+plot.w/2, plot.y+plot.h/2); ctx.textAlign="left"; return; }
+  const vmax=Math.max(...items.map(it=>it.v),1), n=items.length;
+  const rows=Math.max(1,Math.ceil(n/5)), cols=Math.ceil(n/rows);
+  const cellW=plot.w/cols, cellH=plot.h/rows, maxR=Math.min(cellW*0.42, cellH*0.30);
+  items.forEach((it,k)=>{
+    const r=Math.floor(k/cols), cInRij=k-r*cols, inRij=Math.min(cols, n-r*cols), xOff=(cols-inRij)/2*cellW;
+    const cellTop=plot.y+r*cellH, cx=plot.x+xOff+cInRij*cellW+cellW/2, cy=cellTop+cellH*0.40;
+    const rad=Math.max(3, Math.sqrt(it.v/vmax)*maxR);
+    ctx.fillStyle=catColor(it.i); ctx.beginPath(); ctx.arc(cx,cy,rad,0,7); ctx.fill();
+    if(state.toonWaarden){ const txt=fmtNum(it.v); let fs=Math.round(rad*0.5); ctx.font=`700 ${fs}px ${F}`;
+      if(fs>=11 && ctx.measureText(txt).width<rad*1.7){ ctx.fillStyle=bestInk(catColor(it.i));
+        ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(txt,cx,cy); } }
+    ctx.fillStyle=labelInk(it.i,ink); ctx.font=`600 ${Math.round(30*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
+    for(const [li,line] of wrapText(ctx,it.l,cellW*0.92).slice(0,2).entries())
+      ctx.fillText(line, cx, cellTop+cellH*0.80+li*Math.round(34*S));
   });
   ctx.textAlign="left"; ctx.textBaseline="top";
 }
@@ -1461,8 +1569,9 @@ function buildColorControls(){
   HUISSTIJL.achtergronden.forEach(c=>bg.appendChild(
     swatch(c.hex,c.naam, !state.fotoActief && state.kleuren.achtergrond===c.hex, ()=>kiesBg(c.hex))));
   const tr=swatch("#ffffff","Transparant", !state.fotoActief && state.kleuren.achtergrond==="transparant", ()=>kiesBg("transparant"));
+  tr.style.background="";                       // inline kleur weg -> het grijs/wit-dambord uit de CSS wordt zichtbaar
   tr.classList.add("swatch-transparant"); bg.appendChild(tr);
-  const fb=document.createElement("button"); fb.className="btn"; fb.textContent="📷 Foto…";
+  const fb=document.createElement("button"); fb.className="btn"; fb.textContent="Foto…";
   fb.style.cssText="padding:3px 10px;font-size:12px;height:26px";
   fb.onclick=()=>$("fotoFile").click(); bg.appendChild(fb);
   // foto-bewerkpaneel
@@ -1479,8 +1588,8 @@ function buildColorControls(){
   // kleur per reeks / per segment / enkele kleur — afhankelijk van het grafiektype
   const grp=$("seriesColors"); grp.innerHTML="";
   const lbl=$("seriesColorGrp").querySelector(".lbl");
-  const byCategory = ["taart","donut","dashboard"].includes(state.type);
-  const singleColor = ["lollipop","kpi"].includes(state.type);
+  const byCategory = ["taart","donut","dashboard","bellen"].includes(state.type);
+  const singleColor = ["lollipop"].includes(state.type);
   let rows;
   if(byCategory){ lbl.textContent="Kleur per segment"; rows=state.data.labels.map((l,i)=>({nm:l||("Segment "+(i+1)), idx:i})); }
   else if(singleColor){ lbl.textContent="Kleur"; rows=[{nm:"Kleur", idx:0}]; }
@@ -1507,7 +1616,7 @@ function buildColorControls(){
   }
   // labelkleur: eigen tekstkleur per categorielabel (alle types met zichtbare labels)
   buildPerLabelRows("labelKleurGrp","labelKleurRows", state.kleuren.labelKleur,
-    state.type!=="kpi" && state.data.labels.length>0,
+    state.data.labels.length>0,
     "Gewone tekstkleur");
 }
 /* gedeelde bouwer voor "per label een kleur"-rijen (uitlichten + labelkleur) */
@@ -1585,6 +1694,7 @@ function showData(p){
   if(state.gegenereerd && state.data && state.data.labels.length) pushUndo();   // vorige dataset terug te halen
   const vorige=state.kleuren.reeks||[];
   state.kleuren.uitgelicht={}; state.kleuren.labelKleur={};   // horen bij de vorige dataset -> resetten
+  state.bibliotheekPad=null;                                  // nieuwe data = nieuwe grafiek
   state.data=p;
   state.kleuren.reeks=p.series.map((_,i)=> vorige[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
   state.gegenereerd=true;
@@ -1702,8 +1812,10 @@ function iconVlak(){return `<svg viewBox="0 0 40 34"><polygon points="4,28 4,20 
 function iconTaart(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r="14" fill="#1361ff"/><path d="M20 17 L20 3 A14 14 0 0 1 33 21 Z" fill="#ff6813"/><path d="M20 17 L33 21 A14 14 0 0 1 24 30 Z" fill="#abbf3d"/></svg>`}
 function iconDonut(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r="14" fill="#1361ff"/><path d="M20 17 L20 3 A14 14 0 0 1 33 21 Z" fill="#ff6813"/><circle cx="20" cy="17" r="6.5" fill="#fff"/></svg>`}
 function iconLolli(){return `<svg viewBox="0 0 40 34"><g stroke="#1361ff" stroke-width="2.5"><line x1="4" y1="8" x2="26" y2="8"/><line x1="4" y1="17" x2="34" y2="17"/><line x1="4" y1="26" x2="16" y2="26"/></g><g fill="#1361ff"><circle cx="26" cy="8" r="4"/><circle cx="34" cy="17" r="4"/><circle cx="16" cy="26" r="4"/></g></svg>`}
-function iconKpi(){return `<svg viewBox="0 0 40 34"><text x="20" y="24" font-size="22" font-weight="800" text-anchor="middle" fill="#1361ff" font-family="Arial">73%</text></svg>`}
 function iconDashboard(){return `<svg viewBox="0 0 40 34" fill="none" stroke-width="4"><circle cx="11" cy="17" r="7" stroke="#e6e9f0"/><path d="M11 10 a7 7 0 0 1 5 12" stroke="#1361ff" stroke-linecap="round"/><circle cx="29" cy="17" r="7" stroke="#e6e9f0"/><path d="M29 10 a7 7 0 0 1 6 8" stroke="#ff6813" stroke-linecap="round"/></svg>`}
+function iconStapel100(){return `<svg viewBox="0 0 40 34"><g rx="1"><rect x="3" y="7" width="16" height="8" rx="1.5" fill="#1361ff"/><rect x="19" y="7" width="10" height="8" fill="#ff6813"/><rect x="29" y="7" width="8" height="8" rx="1.5" fill="#abbf3d"/><rect x="3" y="19" width="10" height="8" rx="1.5" fill="#1361ff"/><rect x="13" y="19" width="14" height="8" fill="#ff6813"/><rect x="27" y="19" width="10" height="8" rx="1.5" fill="#abbf3d"/></g></svg>`}
+function iconCombo(){return `<svg viewBox="0 0 40 34"><g fill="#1361ff"><rect x="4" y="16" width="7" height="15" rx="1.5"/><rect x="16" y="12" width="7" height="19" rx="1.5"/><rect x="28" y="20" width="7" height="11" rx="1.5"/></g><polyline points="7,10 19,6 31,13" fill="none" stroke="#ff6813" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><g fill="#ff6813"><circle cx="7" cy="10" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="31" cy="13" r="2.4"/></g></svg>`}
+function iconBellen(){return `<svg viewBox="0 0 40 34"><circle cx="10" cy="20" r="9" fill="#1361ff"/><circle cx="26" cy="14" r="6" fill="#ff6813"/><circle cx="34" cy="24" r="4" fill="#abbf3d"/></svg>`}
 
 /* ============================================================================
    9. GALERIJ  —  gedeelde grafieken van de redactie.
@@ -1727,45 +1839,86 @@ async function galerijFetch(method, opts={}, retry=true){
 }
 async function galerijLaden(){
   const st=$("galerijStatus"), grid=$("galerijGrid"); grid.innerHTML="";
-  if(!galerijOnline()){ st.textContent="De galerij werkt alleen op de online versie van de app (zie README: Vercel + Blob-opslag). Deze offline versie blijft verder volledig werken."; return; }
+  if(!galerijOnline()){ st.textContent="De bibliotheek werkt alleen op de online versie van de app (zie README: Vercel + Blob-opslag). Deze offline versie blijft verder volledig werken."; return; }
   st.textContent="Laden…";
   try{
     const res=await fetch(GALERIJ.api);
-    if(!res.ok){ const e=await res.json().catch(()=>({})); st.textContent="Galerij niet beschikbaar: "+(e.fout||("HTTP "+res.status)); return; }
+    if(!res.ok){ const e=await res.json().catch(()=>({})); st.textContent="Bibliotheek niet beschikbaar: "+(e.fout||("HTTP "+res.status)); return; }
     const data=await res.json(), items=data.items||[];
-    st.textContent= items.length ? items.length+" bewaarde grafiek(en) — nieuwste eerst."
-                                 : "Nog geen grafieken bewaard. Maak een grafiek en klik op “☁ In galerij”.";
+    st.textContent= items.length ? items.length+" bewaarde grafiek(en) — nieuwste eerst. Klik ✎ Bewerken om een grafiek terug in de app te laden."
+                                 : "Nog geen grafieken bewaard. Maak een grafiek en klik op “☁ In bibliotheek”.";
     for(const it of items){
       const d=document.createElement("div"); d.className="gitem";
-      const naam=(it.pad||"").replace(/^grafieken\//,"").replace(/\.png$/,"").replace(/-[A-Za-z0-9]{16,}$/,"");
+      const naam=(it.pad||"").split("/").pop().split("__")[0].replace(/-/g," ") || "grafiek";
       const datum=it.datum? new Date(it.datum).toLocaleDateString("nl-NL",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
       const view=escapeAttr(it.viewUrl||""), dl=escapeAttr((it.viewUrl||"")+"&download=1");
       d.innerHTML=`<a href="${view}" target="_blank" rel="noopener"><img loading="lazy" src="${view}" alt="${escapeAttr(naam)}"></a>
         <div class="gmeta"><span class="gnaam" title="${escapeAttr(naam)}">${escapeAttr(naam)}</span><span class="gdatum">${datum}</span></div>
-        <div class="gknoppen"><a class="btn" href="${dl}" target="_blank" rel="noopener">⬇ Download</a>
-        <button class="btn gdel" data-pad="${escapeAttr(it.pad)}">✕ Verwijderen</button></div>`;
+        <div class="gknoppen"><button class="btn gedit" data-data="${escapeAttr(it.dataUrl||"")}" data-pad="${escapeAttr(it.pad)}">✎ Bewerken</button>
+        <a class="btn" href="${dl}" target="_blank" rel="noopener">⬇</a>
+        <button class="btn gdel" data-pad="${escapeAttr(it.pad)}" title="Verwijderen">✕</button></div>`;
       grid.appendChild(d);
     }
     grid.querySelectorAll(".gdel").forEach(b=>b.onclick=async ()=>{
-      if(!confirm("Deze grafiek voor iedereen uit de galerij verwijderen?")) return;
+      if(!confirm("Deze grafiek voor iedereen uit de bibliotheek verwijderen?")) return;
       const res=await galerijFetch("DELETE",{ qs:"?pad="+encodeURIComponent(b.dataset.pad) });
       if(res.ok) galerijLaden();
       else{ const e=await res.json().catch(()=>({})); alert("Verwijderen mislukt: "+(e.fout||("HTTP "+res.status))); }
     });
-  }catch(_){ st.textContent="Galerij niet bereikbaar. Staat de app online met gekoppelde Blob-opslag? (Zie README.)"; }
+    grid.querySelectorAll(".gedit").forEach(b=>b.onclick=()=>bibliotheekBewerken(b.dataset.data, b.dataset.pad));
+  }catch(_){ st.textContent="Bibliotheek niet bereikbaar. Staat de app online met gekoppelde Blob-opslag? (Zie README.)"; }
+}
+// snapshot van alles wat nodig is om een grafiek later te bewerken (geen foto)
+function bibliotheekSnapshot(){
+  return { raw:$("raw").value, titel:$("titel").value, ondertitel:$("ondertitel").value, bron:$("bron").value,
+    type:state.type, formaat:state.formaat, toonWaarden:state.toonWaarden, data:state.data,
+    kleuren:{ achtergrond:state.kleuren.achtergrond, tekst:state.kleuren.tekst, reeks:state.kleuren.reeks,
+      uitgelicht:state.kleuren.uitgelicht, labelKleur:state.kleuren.labelKleur } };
+}
+// een uit de bibliotheek geladen grafiek terug in de app zetten
+function bibliotheekToepassen(snap, pad){
+  $("raw").value=snap.raw||""; $("titel").value=snap.titel||""; $("ondertitel").value=snap.ondertitel||""; $("bron").value=snap.bron||"";
+  state.type=snap.type||"kolom"; state.formaat=snap.formaat||{w:1920,h:1080,id:"web"};
+  state.toonWaarden=snap.toonWaarden!==false; $("showValues").checked=state.toonWaarden;
+  state.fotoActief=false; state.foto={img:null,panX:.5,panY:.5,zoom:1,contrast:100,transp:0};
+  state.data=snap.data||{labels:[],series:[]};
+  const k=snap.kleuren||{};
+  state.kleuren.achtergrond=k.achtergrond||"#ffffff"; state.kleuren.tekst=k.tekst||"#131720";
+  state.kleuren.reeks=Array.isArray(k.reeks)?k.reeks:HUISSTIJL.reeksVolgorde.slice();
+  state.kleuren.uitgelicht=k.uitgelicht||{}; state.kleuren.labelKleur=k.labelKleur||{};
+  state.bibliotheekPad=pad||null; state.gegenereerd=true;
+  $("empty").classList.add("hidden");
+  ["preview","downloadbar","editcard","colorcard","formatcard"].forEach(x=>$(x).classList.remove("hidden"));
+  buildTypePicker(); buildDataTable(); buildColorControls(); buildSizeButtons(); render();
+}
+async function bibliotheekBewerken(dataUrl, pad){
+  if(!dataUrl){ alert("Van deze (oudere) grafiek is geen bewerkbare data bewaard; alleen de afbeelding."); return; }
+  try{
+    const res=await fetch(dataUrl);
+    if(!res.ok){ const e=await res.json().catch(()=>({})); alert("Kon de grafiek niet laden: "+(e.fout||("HTTP "+res.status))); return; }
+    const snap=await res.json();
+    bibliotheekToepassen(snap, pad);
+    $("galerijModal").classList.add("hidden");
+  }catch(_){ alert("Kon de bewerkbare data niet ophalen."); }
 }
 async function galerijBewaren(){
   if(!state.gegenereerd){ alert("Maak eerst een grafiek."); return; }
-  if(!galerijOnline()){ alert("Bewaren in de gedeelde galerij werkt alleen op de online versie van de app.\n\nGebruik hier ⬇ Download PNG."); return; }
+  if(!galerijOnline()){ alert("Bewaren in de bibliotheek werkt alleen op de online versie van de app.\n\nGebruik hier ⬇ Download PNG."); return; }
+  let vervang=null;
+  if(state.bibliotheekPad){                                     // deze grafiek komt uit de bibliotheek
+    const ok=confirm("Deze grafiek komt uit de bibliotheek.\n\nOK  = het origineel vervangen\nAnnuleren = als nieuwe grafiek bewaren");
+    if(ok) vervang=state.bibliotheekPad;
+  }
   const btn=$("btnSave"), o=btn.textContent; btn.disabled=true; btn.textContent="Bewaren…";
   try{
     const png=$("preview").toDataURL("image/png");
     const naam=$("titel").value.trim()||"grafiek";
     const res=await galerijFetch("POST",{ headers:{ "content-type":"application/json" },
-      body: JSON.stringify({ naam, png }) });
-    if(res.ok){ btn.textContent=o; flash(btn,"Bewaard ✓"); }
+      body: JSON.stringify({ naam, png, data: bibliotheekSnapshot(), vervang }) });
+    if(res.ok){ const r=await res.json().catch(()=>({})); if(r.pad) state.bibliotheekPad=r.pad;
+      btn.textContent=o; flash(btn, vervang?"Vervangen ✓":"Bewaard ✓"); }
     else{ const e=await res.json().catch(()=>({})); alert("Bewaren mislukt: "+(e.fout||("HTTP "+res.status))); }
-  }catch(_){ alert("Geen verbinding met de galerij-opslag."); }
+  }catch(_){ alert("Geen verbinding met de bibliotheek-opslag."); }
   finally{ btn.disabled=false; if(btn.textContent==="Bewaren…") btn.textContent=o; }
 }
 $("btnSave").onclick=galerijBewaren;
@@ -1776,6 +1929,15 @@ $("galerijModal").addEventListener("click",e=>{ if(e.target.id==="galerijModal")
 
 /* ---- init ---- */
 buildTypePicker();
+// lege startgrid: 2 kolommen (label + waarde) en 4 rijen, meteen invulbaar
+(function startLeeg(){
+  state.data={ labels:["","","",""], series:[{ naam:"Waarde", waarden:[null,null,null,null] }] };
+  state.kleuren.reeks=[HUISSTIJL.reeksVolgorde[0]];
+  state.gegenereerd=true; state.bibliotheekPad=null;
+  $("empty").classList.add("hidden");
+  ["preview","downloadbar","editcard","colorcard","formatcard"].forEach(x=>$(x).classList.remove("hidden"));
+  buildDataTable(); buildColorControls(); buildSizeButtons(); render();
+})();
 
 /* Voorbeeld krimpt naar compact zodra je rechts naar de data scrolt (met
    hysterese zodat het niet flikkert); omhoog scrollen maakt 'm weer groot.

@@ -81,10 +81,12 @@ een vaste link zonder iets te downloaden. Zie *Online zetten* hieronder.
 | **Gestapeld** | opbouw van een geheel (delen samen = totaal) |
 | **Lijn** | ontwikkeling door de tijd |
 | **Vlak** | ontwikkeling + volume |
+| **100% horizontaal** | verhoudingen per categorie (elke balk = 100%) |
+| **Kolom + lijn** | combinatie: eerste reeks als kolommen, de rest als lijn |
 | **Taart / Donut** | verdeling van één geheel (max ~6 delen) |
+| **Bellen** | vergelijking via bol-grootte (oppervlak ∝ waarde) |
 | **Rangschikking** (lollipop) | top-lijstjes, netter dan veel staven |
-| **Groot getal** (KPI) | één cijfer dat het verhaal is |
-| **Dashboard** (ring-meters) | rij ring-meters met % per categorie (bijv. per leeftijdsgroep) |
+| **Dashboard** (ring-meters) | rij ring-meters met % per categorie (netjes gecentreerd) |
 
 Meerdere kolommen/reeksen naast elkaar? Zet gewoon meer kolommen in je data —
 de tool maakt er automatisch een **gegroepeerde** grafiek van.
@@ -137,10 +139,14 @@ waarde-labels en de datatabel standaard aan.
 
 ## Galerij — gedeelde grafieken van de redactie
 
-Op de **online versie** kan iedereen gemaakte grafieken **bewaren en
-terugzien**: klik na het genereren op **☁ In galerij**, en open de galerij
-via de knop **🖼 Galerij** bovenin. Daar staan alle bewaarde grafieken
-(nieuwste eerst) met download- en verwijderknop.
+Op de **online versie** kan iedereen gemaakte grafieken **bewaren, terugzien en
+opnieuw bewerken**: klik na het genereren op **☁ In bibliotheek**, en open de
+bibliotheek via de knop **Bibliotheek** bovenin. Daar staan alle bewaarde
+grafieken (nieuwste eerst) met **✎ Bewerken**, download- en verwijderknop.
+Met *Bewerken* laad je een bewaarde grafiek terug in de app (inclusief de
+cijfers en instellingen); bij het opslaan vraagt de app of je het **origineel
+vervangt** of als **nieuwe** grafiek bewaart. *(De achtergrond-foto wordt niet
+in de bibliotheek bewaard; de rest wel.)*
 
 **Zo zet je de opslag aan (eenmalig, via Vercel — gratis):**
 
@@ -201,4 +207,4 @@ De opbouw van de code staat in het commentaarblok bovenaan `index.html`
 Alle grafiektypes, de data-parser (incl. Excel, komma/puntkomma-CSV met quotes
 en dataportaal-exports), tekst-extractie, kleuren (incl. uitlichten en
 labelkleur), undo, PNG-export, de drie formaten en de layout zijn
-geautomatiseerd getest met een headless browser (173 checks, incl. galerij en rij-volgorde).
+geautomatiseerd getest met een headless browser (208 checks).
