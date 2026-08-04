@@ -65,18 +65,18 @@
   a{color:var(--oost-blauw)}
 
   header.app{
-    background:var(--oost-donker);
-    color:#fff;
+    background:var(--wit);
+    color:var(--ink);
     padding:14px 22px;
+    border-bottom:1px solid var(--lijn);         /* dun grijs/blauw lijntje, net als de kaarten */
     display:flex;align-items:center;gap:14px;
   }
   header.app .logo{
     font-family:var(--font);font-weight:600;font-size:22px;letter-spacing:-1.5px;
-    background:#fff;color:var(--oost-blauw);
-    padding:2px 12px;border-radius:8px;
+    color:var(--oost-blauw);                      /* blauwe letters op wit, geen kader */
   }
   header.app h1{font-size:17px;margin:0;font-weight:600}
-  header.app .sub{opacity:.7;font-size:13px;margin-left:auto}
+  header.app .sub{color:var(--ink-2);font-size:13px;margin-left:auto}
 
   .wrap{
     display:grid;
@@ -147,9 +147,9 @@
   }
   .btn:hover{border-color:var(--oost-blauw)}
   .btn:disabled{opacity:.45;cursor:default;pointer-events:none}
-  .hdrbtn{font:600 13px var(--font);color:#fff;background:rgba(255,255,255,.12);
-    border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:7px 13px;cursor:pointer}
-  .hdrbtn:hover{background:rgba(255,255,255,.22)}
+  .hdrbtn{font:600 13px var(--font);color:var(--ink);background:var(--wit);
+    border:1px solid var(--lijn);border-radius:9px;padding:7px 13px;cursor:pointer;transition:.12s}
+  .hdrbtn:hover{border-color:var(--oost-blauw);color:var(--oost-blauw)}
 
   /* ---- galerij (gedeelde grafieken) ---- */
   .gmodal{position:fixed;inset:0;z-index:50;background:rgba(11,17,27,.55);
