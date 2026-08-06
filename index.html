@@ -225,6 +225,9 @@
   table.data td.num input{text-align:right;font-variant-numeric:tabular-nums}
   table.data td.del{width:26px;text-align:center}
   .icon-btn{border:0;background:none;cursor:pointer;color:var(--ink-2);font-size:15px;padding:2px 6px;border-radius:6px}
+  .annotrow{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+  .annotrow input{flex:1}
+  .annotrow .icon-btn:hover{color:var(--oost-rood,#ff4242)}
   .icon-btn:disabled{opacity:.25;cursor:default;pointer-events:none}
   .icon-btn:hover{background:#ffe9e9;color:#c0392b}
 
@@ -340,6 +343,13 @@
       <div class="sizes" id="sizes"></div>
     </div>
 
+    <div class="card hidden" id="annotcard">
+      <h2><span class="step">6</span> Tekstvak met duiding</h2>
+      <p class="hint" style="margin-top:0">Plaats een kadertje met een korte tekst en een lijntje naar het punt dat je wilt uitlichten. <b>Sleep</b> het kader én het stipje in het voorbeeld; dubbelklik op een kader om de tekst te wijzigen.</p>
+      <div id="annotList"></div>
+      <button class="btn" id="btnAddAnnot" style="margin-top:6px">+ Tekstvak</button>
+    </div>
+
     <details class="tips">
       <summary>Tips — korte handleiding</summary>
       <div class="note">
@@ -355,7 +365,10 @@
         <b>4. Kleuren &amp; waarden (stap 4).</b> Kies achtergrond (huisstijlkleur, <b>transparant</b> of een <b>foto</b>),
         tekstkleur en de kleur per reeks. Met <b>Uitlichten</b> geef je één losse staaf/kolom een eigen kleur
         (bijv. alleen Overijssel), met <b>Labelkleur</b> kleur je de labeltekst. Vink <b>Waarden tonen</b> aan/uit.<br><br>
-        <b>5. Formaat, opslaan &amp; delen.</b> Kies het formaat (stap 5: liggend, vierkant of verticaal).
+        <b>5. Tekstvak met duiding (stap 6).</b> Klik <b>+ Tekstvak</b> voor een kadertje met een lijntje naar een punt
+        in de grafiek. <b>Sleep</b> het kader én het stipje in het voorbeeld naar de juiste plek; dubbelklik op een
+        kader om de tekst te wijzigen. Het gaat mee in de PNG en in de bibliotheek.<br><br>
+        <b>6. Formaat, opslaan &amp; delen.</b> Kies het formaat (stap 5: liggend, vierkant of verticaal).
         <b>Download PNG</b> of <b>Kopieer</b> naar het klembord. Met <b>☁ In bibliotheek</b> bewaar je de grafiek voor
         de hele redactie; via <b>Bibliotheek</b> (bovenin) bekijk, download of <b>✎ bewerk</b> je bewaarde grafieken opnieuw.<br><br>
         <span style="color:var(--ink-2)">Huisstijl: <b>Oost-blauw</b> als hoofdkleur en het lettertype <b>Roobert</b> staan
@@ -504,6 +517,10 @@ const state = {
   toonWaarden: true,
   gegenereerd: false,
   bibliotheekPad: null,   // pad van de grafiek die (uit de bibliotheek) bewerkt wordt; null = nieuw
+  // sleepbare tekstvakjes met een verbindingslijn (duiding). Posities als fractie
+  // [0..1] van het doek -> formaat-onafhankelijk. x/y = midden van het kader,
+  // ax/ay = het punt waar het lijntje naar wijst.
+  annotaties: [],   // [{ tekst, x, y, ax, ay }]
 };
 
 const FORMATEN = [
@@ -987,7 +1004,13 @@ function render(){
   const legendTypes = ["kolom","staaf","gestapeld","stapel100h","combo","lijn","vlak"];
   const showTopLegend = data.series.length>1 && legendTypes.includes(state.type);
   const legendH = showTopLegend ? drawLegend(ctx,plot,S,F,ink) : 0;
-  const p2={ ...plot, y:plot.y+legendH, h:plot.h-legendH };
+  // Kopruimte boven het plotgebied: bij staande grafieken reikt een hoge staaf/
+  // punt (waarde = as-maximum) tot bovenaan, en het waarde-label staat daar nóg
+  // bóven — dat liep anders door de titel/ondertitel heen. Reserveer daarom wat
+  // ruimte (ruimer als de waarde-labels aanstaan).
+  const staand = ["kolom","gestapeld","lijn","vlak","combo"].includes(state.type);
+  const topPad = staand ? (state.toonWaarden ? Math.round(48*S) : Math.round(16*S)) : 0;
+  const p2={ ...plot, y:plot.y+legendH+topPad, h:plot.h-legendH-topPad };
 
   const ctxColors={ ink, muted, grid, axis, F, S, darkBg, transp, foto };
   switch(state.type){
@@ -1004,6 +1027,74 @@ function render(){
     case "lollipop":  drawLollipop(ctx,p2,data,ctxColors);   break;
     case "dashboard": drawDashboard(ctx,p2,data,ctxColors);  break;
   }
+
+  drawAnnotaties(ctx, w, h, S, F, darkBg);   // sleepbare duiding-kadertjes bovenop de grafiek
+}
+
+/* Tekstvakjes met verbindingslijn ("duiding"). Wordt bovenop de grafiek getekend
+   en gaat dus automatisch mee in de PNG-export. Elk kader is een witte kaart met
+   een dunne rand; het lijntje loopt vanaf de kaderrand naar het aangewezen punt
+   (een gevuld stipje). Het berekende kader (in doek-pixels) wordt op de annotatie
+   bewaard (a._box) zodat het slepen weet waar je klikt. */
+function annotEdgePoint(cx,cy,bw,bh,px,py){
+  const dx=px-cx, dy=py-cy;
+  if(!dx && !dy) return { x:cx, y:cy };
+  const hw=bw/2, hh=bh/2;
+  const t=1/Math.max(Math.abs(dx)/hw, Math.abs(dy)/hh);
+  return { x:cx+dx*Math.min(1,t), y:cy+dy*Math.min(1,t) };
+}
+function drawAnnotaties(ctx, w, h, S, F, darkBg){
+  const arr=state.annotaties;
+  if(!arr || !arr.length) return;
+  const pad=Math.round(18*S), fs=Math.round(30*S), lh=Math.round(38*S), maxTW=Math.round(430*S);
+  const marge=Math.round(8*S), rr=Math.round(12*S);
+  // Het kader is altijd een witte kaart met donkere tekst (leesbaar op elke
+  // achtergrond). Het lijntje/stipje in Oost-blauw, maar val terug op een
+  // contrastkleur als de achtergrond zelf (bijna) blauw of donker is.
+  const surface=currentSurface();
+  let accent="#1361ff";
+  if(contrastRatio(accent,surface) < 2.2) accent = darkBg ? "#ffffff" : "#131720";
+  const rand="rgba(19,23,32,.22)";                     // neutrale hairline om de kaart
+  const ring= darkBg ? "rgba(0,0,0,.35)" : "rgba(255,255,255,.92)";
+  ctx.save();
+  for(const a of arr){
+    const leeg=!(a.tekst && a.tekst.trim());
+    const txt = leeg ? "Tekst…" : a.tekst.trim();
+    ctx.font=`600 ${fs}px ${F}`;
+    const lines=wrapText(ctx, txt, maxTW).slice(0,4);
+    let tw=0; for(const l of lines) tw=Math.max(tw, ctx.measureText(l).width);
+    const bw=Math.min(maxTW,tw)+pad*2, bh=lines.length*lh+pad*2-(lh-fs);
+    let cx=a.x*w, cy=a.y*h;
+    cx=Math.max(bw/2+marge, Math.min(w-bw/2-marge, cx));
+    cy=Math.max(bh/2+marge, Math.min(h-bh/2-marge, cy));
+    const bx=cx-bw/2, by=cy-bh/2;
+    const axp=Math.max(0,Math.min(w,a.ax*w)), ayp=Math.max(0,Math.min(h,a.ay*h));
+    // verbindingslijn (kaderrand -> aanwijspunt) + stip
+    const edge=annotEdgePoint(cx,cy,bw,bh,axp,ayp);
+    const buiten = axp<bx-2 || axp>bx+bw+2 || ayp<by-2 || ayp>by+bh+2;   // stip binnen kader? dan geen lijn
+    if(buiten){
+      ctx.strokeStyle=accent; ctx.lineWidth=Math.max(2,2.5*S); ctx.lineCap="round";
+      ctx.beginPath(); ctx.moveTo(edge.x,edge.y); ctx.lineTo(axp,ayp); ctx.stroke();
+      ctx.beginPath(); ctx.arc(axp,ayp,Math.max(5,7*S),0,7);
+      ctx.fillStyle=accent; ctx.fill();
+      ctx.strokeStyle=ring; ctx.lineWidth=Math.max(1.5,2*S); ctx.stroke();
+    }
+    // kader met zachte schaduw
+    ctx.save();
+    ctx.shadowColor="rgba(11,27,51,.22)"; ctx.shadowBlur=Math.round(18*S); ctx.shadowOffsetY=Math.round(4*S);
+    ctx.fillStyle="#ffffff";
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx,by,bw,bh,rr) : ctx.rect(bx,by,bw,bh); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle=rand; ctx.lineWidth=Math.max(1,1.5*S);
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx,by,bw,bh,rr) : ctx.rect(bx,by,bw,bh); ctx.stroke();
+    // tekst
+    ctx.fillStyle= leeg ? "#9aa6b8" : "#131720";
+    ctx.textAlign="left"; ctx.textBaseline="top"; ctx.font=`600 ${fs}px ${F}`;
+    let ty=by+pad; for(const l of lines){ ctx.fillText(l, bx+pad, ty); ty+=lh; }
+    a._box={ x:bx, y:by, w:bw, h:bh, ax:axp, ay:ayp, dotR:Math.max(5,7*S) };
+  }
+  ctx.textAlign="left"; ctx.textBaseline="top";
+  ctx.restore();
 }
 
 /* Foto als achtergrond: cover-fit + pan (fractie), zoom = bijsnijden, contrast-filter.
@@ -1655,6 +1746,38 @@ function buildSizeButtons(){
   });
 }
 
+// lijst met sleepbare tekstvakjes (duiding): tekst wijzigen + verwijderen
+function buildAnnotList(){
+  const box=$("annotList"); if(!box) return; box.innerHTML="";
+  const arr=state.annotaties||[];
+  if(!arr.length){
+    const p=document.createElement("p"); p.className="hint"; p.style.margin="2px 0 4px";
+    p.textContent="Nog geen tekstvak. Klik hieronder om er één toe te voegen.";
+    box.appendChild(p); return;
+  }
+  arr.forEach((a,i)=>{
+    const row=document.createElement("div"); row.className="annotrow";
+    const inp=document.createElement("input"); inp.type="text"; inp.value=a.tekst||"";
+    inp.placeholder="Korte duiding…"; inp.maxLength=120;
+    inp.oninput=()=>{ a.tekst=inp.value; render(); };
+    const del=document.createElement("button"); del.className="icon-btn"; del.textContent="✕";
+    del.title="Tekstvak verwijderen";
+    del.onclick=()=>{ state.annotaties.splice(i,1); buildAnnotList(); render(); };
+    row.appendChild(inp); row.appendChild(del); box.appendChild(row);
+  });
+}
+function annotToevoegen(){
+  if(!state.gegenereerd){ alert("Maak eerst een grafiek."); return; }
+  if(!Array.isArray(state.annotaties)) state.annotaties=[];
+  if(state.annotaties.length>=8){ alert("Maximaal 8 tekstvakken."); return; }
+  const n=state.annotaties.length;
+  // nieuwe kaders iets gespreid neerzetten zodat ze niet exact op elkaar vallen
+  state.annotaties.push({ tekst:"", x:0.70, y:0.22+(n%4)*0.07, ax:0.45, ay:0.50 });
+  buildAnnotList(); render();
+  const inputs=$("annotList").querySelectorAll("input");
+  if(inputs.length) inputs[inputs.length-1].focus();
+}
+
 function generate(){
   const raw=$("raw").value;
   const parsed=parseInput(raw);
@@ -1699,8 +1822,8 @@ function showData(p){
   state.kleuren.reeks=p.series.map((_,i)=> vorige[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
   state.gegenereerd=true;
   $("empty").classList.add("hidden");
-  ["preview","downloadbar","editcard","colorcard","formatcard"].forEach(x=>$(x).classList.remove("hidden"));
-  buildDataTable(); buildColorControls(); buildSizeButtons(); render();
+  ["preview","downloadbar","editcard","colorcard","formatcard","annotcard"].forEach(x=>$(x).classList.remove("hidden"));
+  buildDataTable(); buildColorControls(); buildSizeButtons(); buildAnnotList(); render();
 }
 
 /* ---- ongedaan maken (Ctrl+Z) / opnieuw (Ctrl+Y) ---- */
@@ -1731,6 +1854,7 @@ $("btnGen").onclick=generate;
 $("btnUpdate").onclick=()=>{ buildColorControls(); render(); };
 $("btnPng").onclick=downloadPng;
 $("btnCopy").onclick=copyPng;
+$("btnAddAnnot").onclick=annotToevoegen;
 $("showValues").onchange=e=>{ state.toonWaarden=e.target.checked; render(); };
 $("btnAddRow").onclick=()=>{ pushUndo(); state.data.labels.push(""); state.data.series.forEach(s=>s.waarden.push(0)); buildDataTable(); };
 $("btnAddSeries").onclick=()=>{ pushUndo(); const j=state.data.series.length;
@@ -1783,22 +1907,66 @@ $("btnFotoWeg").onclick=()=>{
   state.kleuren.achtergrond="#ffffff"; if(state.kleuren.tekst==="#ffffff") state.kleuren.tekst="#131720";
   buildColorControls(); render();
 };
-// slepen om de foto te verplaatsen (pan als fractie -> blijft behouden bij formaat-/zoomwissel)
+// slepen in het voorbeeld: eerst de duiding-kadertjes (kader of stipje),
+// anders de achtergrondfoto verplaatsen (pan als fractie).
 (function(){
-  const cv=$("preview"); let drag=false, lx=0, ly=0;
+  const cv=$("preview"); let lx=0, ly=0;
+  let mode=null;               // "annot-box" | "annot-dot" | "foto"
+  let ann=null, offX=0, offY=0; // geselecteerde annotatie + grijp-offset
   const factor=()=> cv.width / (cv.getBoundingClientRect().width||cv.width);
-  cv.addEventListener("pointerdown",e=>{ if(!(state.fotoActief&&state.foto.img)) return;
-    drag=true; lx=e.clientX; ly=e.clientY; cv.classList.add("dragging");
-    try{ cv.setPointerCapture(e.pointerId); }catch(_){} });
-  cv.addEventListener("pointermove",e=>{ if(!drag) return; e.preventDefault();
+  const canvasPos=e=>{ const r=cv.getBoundingClientRect();
+    return { x:(e.clientX-r.left)*(cv.width/(r.width||cv.width)),
+             y:(e.clientY-r.top)*(cv.height/(r.height||cv.height)) }; };
+  // vind de bovenste annotatie onder de cursor (stip heeft voorrang op kader)
+  function annotHit(px,py){
+    const arr=state.annotaties||[]; const grab=12*factor();
+    for(let i=arr.length-1;i>=0;i--){ const b=arr[i]._box; if(!b) continue;
+      if(Math.hypot(px-b.ax,py-b.ay) <= b.dotR+grab) return { a:arr[i], mode:"annot-dot" }; }
+    for(let i=arr.length-1;i>=0;i--){ const b=arr[i]._box; if(!b) continue;
+      if(px>=b.x&&px<=b.x+b.w&&py>=b.y&&py<=b.y+b.h) return { a:arr[i], mode:"annot-box" }; }
+    return null;
+  }
+  cv.addEventListener("pointerdown",e=>{
+    if(!state.gegenereerd) return;
+    const p=canvasPos(e), hit=annotHit(p.x,p.y);
+    if(hit){
+      mode=hit.mode; ann=hit.a;
+      if(mode==="annot-box"){ offX=p.x-ann._box.x-ann._box.w/2; offY=p.y-ann._box.y-ann._box.h/2; }
+      cv.classList.add("dragging"); try{ cv.setPointerCapture(e.pointerId); }catch(_){}
+      e.preventDefault(); return;
+    }
+    if(state.fotoActief&&state.foto.img){ mode="foto"; lx=e.clientX; ly=e.clientY;
+      cv.classList.add("dragging"); try{ cv.setPointerCapture(e.pointerId); }catch(_){} }
+  });
+  cv.addEventListener("pointermove",e=>{
+    if(!mode){                                   // geen sleep: cursor als hint tonen
+      if(state.gegenereerd && (state.annotaties||[]).length){
+        const p=canvasPos(e), h=annotHit(p.x,p.y);
+        cv.style.cursor = h ? (h.mode==="annot-dot"?"crosshair":"move") : (state.fotoActief&&state.foto.img?"grab":"");
+      }
+      return;
+    }
+    e.preventDefault();
+    const p=canvasPos(e);
+    if(mode==="annot-box"){ ann.x=clamp01((p.x-offX)/cv.width); ann.y=clamp01((p.y-offY)/cv.height); render(); return; }
+    if(mode==="annot-dot"){ ann.ax=clamp01(p.x/cv.width); ann.ay=clamp01(p.y/cv.height); render(); return; }
+    // foto
     const f=state.foto, img=f.img; if(!img) return;
     const s=factor(), cover=fotoCover(cv.width,cv.height,img);
     const sw=img.naturalWidth*cover, sh=img.naturalHeight*cover;
-    if(sw>cv.width)  f.panX=clamp01(f.panX + (e.clientX-lx)*s/(cv.width-sw));   // (w-sw)<0 -> juiste richting
+    if(sw>cv.width)  f.panX=clamp01(f.panX + (e.clientX-lx)*s/(cv.width-sw));
     if(sh>cv.height) f.panY=clamp01(f.panY + (e.clientY-ly)*s/(cv.height-sh));
-    lx=e.clientX; ly=e.clientY; render(); });
-  const stop=()=>{ drag=false; cv.classList.remove("dragging"); };
+    lx=e.clientX; ly=e.clientY; render();
+  });
+  const stop=()=>{ mode=null; ann=null; cv.classList.remove("dragging"); };
   cv.addEventListener("pointerup",stop); cv.addEventListener("pointercancel",stop);
+  // dubbelklik op een kader = tekst wijzigen
+  cv.addEventListener("dblclick",e=>{
+    if(!state.gegenereerd) return;
+    const p=canvasPos(e), hit=annotHit(p.x,p.y);
+    if(hit){ const t=prompt("Tekst voor dit kadertje:", hit.a.tekst||"");
+      if(t!=null){ hit.a.tekst=t; buildAnnotList(); render(); } }
+  });
 })();
 $("btnSample").onclick=()=>{ $("raw").value="Regio\tMeldingen\nTwente\t352\nIJsselland\t561\nVechtdal\t284\nSalland\t198\nNoordoost\t147";
   $("titel").value="Meeste meldingen in IJsselland"; $("ondertitel").value="Aantal meldingen per regio, 2025"; $("bron").value="Provincie Overijssel"; };
@@ -1873,7 +2041,9 @@ function bibliotheekSnapshot(){
   return { raw:$("raw").value, titel:$("titel").value, ondertitel:$("ondertitel").value, bron:$("bron").value,
     type:state.type, formaat:state.formaat, toonWaarden:state.toonWaarden, data:state.data,
     kleuren:{ achtergrond:state.kleuren.achtergrond, tekst:state.kleuren.tekst, reeks:state.kleuren.reeks,
-      uitgelicht:state.kleuren.uitgelicht, labelKleur:state.kleuren.labelKleur } };
+      uitgelicht:state.kleuren.uitgelicht, labelKleur:state.kleuren.labelKleur },
+    // alleen de bewaarwaardige velden van de tekstvakjes (geen tijdelijke _box)
+    annotaties:(state.annotaties||[]).map(a=>({ tekst:a.tekst||"", x:a.x, y:a.y, ax:a.ax, ay:a.ay })) };
 }
 // een uit de bibliotheek geladen grafiek terug in de app zetten
 function bibliotheekToepassen(snap, pad){
@@ -1886,10 +2056,13 @@ function bibliotheekToepassen(snap, pad){
   state.kleuren.achtergrond=k.achtergrond||"#ffffff"; state.kleuren.tekst=k.tekst||"#131720";
   state.kleuren.reeks=Array.isArray(k.reeks)?k.reeks:HUISSTIJL.reeksVolgorde.slice();
   state.kleuren.uitgelicht=k.uitgelicht||{}; state.kleuren.labelKleur=k.labelKleur||{};
+  const num=(v,d)=>Number.isFinite(+v)?+v:d;
+  state.annotaties=Array.isArray(snap.annotaties)
+    ? snap.annotaties.map(a=>({ tekst:a.tekst||"", x:num(a.x,0.5), y:num(a.y,0.3), ax:num(a.ax,0.5), ay:num(a.ay,0.5) })) : [];
   state.bibliotheekPad=pad||null; state.gegenereerd=true;
   $("empty").classList.add("hidden");
-  ["preview","downloadbar","editcard","colorcard","formatcard"].forEach(x=>$(x).classList.remove("hidden"));
-  buildTypePicker(); buildDataTable(); buildColorControls(); buildSizeButtons(); render();
+  ["preview","downloadbar","editcard","colorcard","formatcard","annotcard"].forEach(x=>$(x).classList.remove("hidden"));
+  buildTypePicker(); buildDataTable(); buildColorControls(); buildSizeButtons(); buildAnnotList(); render();
 }
 async function bibliotheekBewerken(dataUrl, pad){
   if(!dataUrl){ alert("Van deze (oudere) grafiek is geen bewerkbare data bewaard; alleen de afbeelding."); return; }
