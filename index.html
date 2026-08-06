@@ -1296,34 +1296,42 @@ function drawLine(ctx,plot,data,C,area){
   const step= nl>1 ? p.w/(nl-1) : 0;
   const X=i=> nl>1 ? p.x+step*i : p.x+p.w/2;
   const Y=v=> p.y+p.h-((v-sc.min)/(sc.max-sc.min))*p.h;
+  const allPts=data.series.map(s=> s.waarden.map((v,i)=> v==null ? null : [X(i),Y(v)]));   // ontbrekende meting = gat
+  // 1) vlakken + lijnen + markers. Waarde-labels komen in een aparte, láátste
+  //    ronde zodat ze altijd vóór álle lijnen staan (en dus leesbaar blijven).
   for(let j=0;j<ns;j++){
-    const col=catColor(j);
-    const vals=data.series[j].waarden;
-    const pts=vals.map((v,i)=> v==null ? null : [X(i),Y(v)]);   // ontbrekende meting = gat
-    const heeftGat=pts.some(p=>!p);
+    const col=catColor(j), pts=allPts[j];
+    const heeftGat=pts.some(pt=>!pt);
     if(area && ns<=2 && !heeftGat){
       ctx.beginPath(); ctx.moveTo(pts[0][0],Y(Math.max(0,sc.min)));
       pts.forEach(pt=>ctx.lineTo(pt[0],pt[1]));
       ctx.lineTo(pts[pts.length-1][0],Y(Math.max(0,sc.min)));
       ctx.closePath(); ctx.fillStyle=withAlpha(col,.16); ctx.fill();
     }
-    ctx.strokeStyle=col; ctx.lineWidth=Math.max(2,3*S); ctx.lineJoin="round"; ctx.lineCap="round";
+    ctx.strokeStyle=col; ctx.lineWidth=Math.max(3,4.5*S); ctx.lineJoin="round"; ctx.lineCap="round";
     ctx.beginPath(); let started=false;
     pts.forEach(pt=>{ if(!pt){ started=false; return; } if(started) ctx.lineTo(pt[0],pt[1]); else { ctx.moveTo(pt[0],pt[1]); started=true; } });
     ctx.stroke();
-    // markers + waarde-labels
-    pts.forEach((pt,i)=>{
-      if(!pt) return;
+    pts.forEach(pt=>{ if(!pt) return;
       ctx.fillStyle=currentSurface(); ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(5,6*S),0,7); ctx.fill();
       ctx.fillStyle=col; ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(3.5,4.5*S),0,7); ctx.fill();
-      if(state.toonWaarden && ns<=2 && nl<=14){
-        const above = j%2===0;                      // reeksen wijken boven/onder uit -> geen overlap
-        ctx.fillStyle=ink; ctx.font=`700 ${Math.round(30*S)}px ${F}`; ctx.textAlign="center";
-        ctx.textBaseline= above?"bottom":"top";
-        ctx.fillText(fmtNum(vals[i]), pt[0], pt[1]+(above?-Math.round(12*S):Math.round(12*S)));
-        ctx.textBaseline="top";
-      }
     });
+  }
+  // 2) waarde-labels bovenop, met een contour in de achtergrondkleur zodat het
+  //    getal altijd vóór de lijn leesbaar blijft (en er niet achter verdwijnt).
+  if(state.toonWaarden && ns<=2 && nl<=14){
+    const halo=currentSurface();
+    ctx.font=`700 ${Math.round(30*S)}px ${F}`; ctx.textAlign="center"; ctx.lineJoin="round";
+    for(let j=0;j<ns;j++){
+      const vals=data.series[j].waarden, pts=allPts[j], above=j%2===0;
+      ctx.textBaseline= above?"bottom":"top";
+      pts.forEach((pt,i)=>{ if(!pt) return;
+        const tx=pt[0], ty=pt[1]+(above?-Math.round(15*S):Math.round(15*S)), txt=fmtNum(vals[i]);
+        ctx.lineWidth=Math.max(3,5*S); ctx.strokeStyle=halo; ctx.strokeText(txt,tx,ty);   // achtergrond-contour
+        ctx.fillStyle=ink; ctx.fillText(txt,tx,ty);
+      });
+    }
+    ctx.textBaseline="top";
   }
   // x-labels
   ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
@@ -1528,26 +1536,37 @@ function drawCombo(ctx,plot,data,C){
   const p={x:plot.x+axW, y:plot.y, w:plot.w-axW, h:plot.h-Math.round(44*S)};
   yAxisAndGrid(ctx,p,sc,C,fmtNum);
   const band=p.w/nl, Y=v=>p.y+p.h-((v-sc.min)/(sc.max-sc.min))*p.h, X=i=>p.x+band*i+band/2, zeroY=Y(0), bw=band*0.5;
+  // 1) kolommen (waarde-labels volgen in de laatste ronde, bovenop de lijn)
   for(let i=0;i<nl;i++){
     const v=data.series[0].waarden[i]; if(v==null) continue;
     const x=p.x+band*i+(band-bw)/2, vy=Y(v);
     ctx.fillStyle=catColor(0);
     drawRR(ctx,x,Math.min(vy,zeroY),bw,Math.abs(vy-zeroY),Math.round(5*S), v>=0?"top":"bottom");
-    if(state.toonWaarden && nl<=20){ ctx.fillStyle=ink; ctx.font=`700 ${Math.round(30*S)}px ${F}`;
-      ctx.textAlign="center"; ctx.textBaseline="bottom"; ctx.fillText(fmtNum(v), x+bw/2, Math.min(vy,zeroY)-Math.round(6*S)); ctx.textBaseline="top"; }
   }
+  // 2) lijn(en) + markers
   for(let j=1;j<ns;j++){
     const col=catColor(j), vals=data.series[j].waarden;
     const pts=vals.map((v,i)=> v==null? null : [X(i),Y(v)]);
-    ctx.strokeStyle=col; ctx.lineWidth=Math.max(2,3.5*S); ctx.lineJoin="round"; ctx.lineCap="round";
+    ctx.strokeStyle=col; ctx.lineWidth=Math.max(3,4*S); ctx.lineJoin="round"; ctx.lineCap="round";
     ctx.beginPath(); let started=false;
     pts.forEach(pt=>{ if(!pt){started=false;return;} if(started) ctx.lineTo(pt[0],pt[1]); else { ctx.moveTo(pt[0],pt[1]); started=true; } });
     ctx.stroke();
-    pts.forEach((pt,i)=>{ if(!pt)return;
+    pts.forEach(pt=>{ if(!pt)return;
       ctx.fillStyle=currentSurface(); ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(5,6*S),0,7); ctx.fill();
       ctx.fillStyle=col; ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(3.5,4.5*S),0,7); ctx.fill();
-      if(state.toonWaarden && nl<=14){ ctx.fillStyle=ink; ctx.font=`700 ${Math.round(28*S)}px ${F}`;
-        ctx.textAlign="center"; ctx.textBaseline="bottom"; ctx.fillText(fmtNum(vals[i]), pt[0], pt[1]-Math.round(12*S)); ctx.textBaseline="top"; } });
+    });
+  }
+  // 3) alle waarde-labels bovenop, met achtergrond-contour zodat ze vóór de lijn leesbaar blijven
+  if(state.toonWaarden){
+    const halo=currentSurface(); ctx.textAlign="center"; ctx.textBaseline="bottom"; ctx.lineJoin="round";
+    const labelMet=(txt,tx,ty,fs)=>{ ctx.font=`700 ${fs}px ${F}`;
+      ctx.lineWidth=Math.max(3,5*S); ctx.strokeStyle=halo; ctx.strokeText(txt,tx,ty);
+      ctx.fillStyle=ink; ctx.fillText(txt,tx,ty); };
+    if(nl<=20) for(let i=0;i<nl;i++){ const v=data.series[0].waarden[i]; if(v==null) continue;
+      const x=p.x+band*i+(band-bw)/2, vy=Y(v); labelMet(fmtNum(v), x+bw/2, Math.min(vy,zeroY)-Math.round(6*S), Math.round(30*S)); }
+    if(nl<=14) for(let j=1;j<ns;j++){ const vals=data.series[j].waarden;
+      vals.forEach((v,i)=>{ if(v==null) return; labelMet(fmtNum(v), X(i), Y(v)-Math.round(14*S), Math.round(28*S)); }); }
+    ctx.textBaseline="top";
   }
   ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
   for(let i=0;i<nl;i++){ ctx.fillStyle=labelInk(i,muted); ctx.fillText(fitLabel(ctx,data.labels[i]||"",band-6*S), X(i), p.y+p.h+Math.round(12*S)); }
