@@ -60,6 +60,12 @@ een vaste link zonder iets te downloaden. Zie *Online zetten* hieronder.
 - **Labelkleur** — geef ook de **tekst van een los label** een eigen kleur
   (via het uitklapbare *Labelkleur* onder de kleuren). Onleesbare combinaties
   (bijv. lichtblauw op wit) vallen automatisch terug op de gewone tekstkleur.
+- **Tekstvak met duiding** — klik op **+ Tekstvak** (stap 6) voor een klein
+  kader met een korte tekst en een **verbindingslijntje** naar een punt in de
+  grafiek. **Sleep** het kader én het stipje in het voorbeeld naar de gewenste
+  plek, of dubbelklik op een kader om de tekst te wijzigen. Het kadertje is een
+  witte kaart met donkere tekst (leesbaar op elke achtergrond); het lijntje kleurt
+  mee met de huisstijl. Het gaat automatisch mee in de PNG en in de bibliotheek.
 - **Achtergrond** — een huisstijlkleur, **Transparant** (PNG met doorzichtige
   achtergrond, bijv. om zelf onder een tv-beeld te leggen) of een **foto**.
   Bij een foto kun je 'm **verslepen** in het voorbeeld, **inzoomen/bijsnijden**,
@@ -206,5 +212,6 @@ De opbouw van de code staat in het commentaarblok bovenaan `index.html`
 
 Alle grafiektypes, de data-parser (incl. Excel, komma/puntkomma-CSV met quotes
 en dataportaal-exports), tekst-extractie, kleuren (incl. uitlichten en
-labelkleur), undo, PNG-export, de drie formaten en de layout zijn
-geautomatiseerd getest met een headless browser (208 checks).
+labelkleur), de sleepbare tekstvakken met verbindingslijn, undo, PNG-export, de
+drie formaten en de layout (o.a. dat hoge staven niet meer door de titel lopen)
+zijn geautomatiseerd getest met een headless browser.
