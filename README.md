@@ -52,11 +52,11 @@ een vaste link zonder iets te downloaden. Zie *Online zetten* hieronder.
   naar een compacte versie (en groeit weer bij terugscrollen). Liever zelf
   bepalen? Sleep het **balkje onder het voorbeeld** naar de gewenste hoogte;
   dubbelklik op het balkje om terug te gaan naar automatisch.
-- **Kleuren (huisstijl)** — kies tekstkleur en de kleur per reeks/segment.
-  Alleen huisstijlkleuren zijn beschikbaar (incl. lichtblauw en wit), dus het
-  blijft altijd RTV Oost.
+- **Kleuren (huisstijl)** — kies tekstkleur en de kleur per reeks/segment. Het
+  palet is bewust klein gehouden: **Oost-blauw, geel, donkerblauw, lichtblauw en
+  wit**. Zo blijft het altijd RTV Oost.
 - **Uitlichten** — geef bij één reeks een losse staaf/kolom een eigen kleur
-  (bijv. alleen Overijssel oranje) via *Uitlichten* onder de kleuren.
+  (bijv. alleen Overijssel geel) via *Uitlichten* onder de kleuren.
 - **Labelkleur** — geef ook de **tekst van een los label** een eigen kleur
   (via het uitklapbare *Labelkleur* onder de kleuren). Onleesbare combinaties
   (bijv. lichtblauw op wit) vallen automatisch terug op de gewone tekstkleur.
@@ -66,14 +66,24 @@ een vaste link zonder iets te downloaden. Zie *Online zetten* hieronder.
   plek, of dubbelklik op een kader om de tekst te wijzigen. Het kadertje is een
   witte kaart met donkere tekst (leesbaar op elke achtergrond); het lijntje kleurt
   mee met de huisstijl. Het gaat automatisch mee in de PNG en in de bibliotheek.
-- **Achtergrond** — een huisstijlkleur, **Transparant** (PNG met doorzichtige
-  achtergrond, bijv. om zelf onder een tv-beeld te leggen) of een **foto**.
-  Bij een foto kun je 'm **verslepen** in het voorbeeld, **inzoomen/bijsnijden**,
-  het **contrast** aanpassen en met een schuif **transparant maken (vervagen)**
-  zodat de grafiek er goed op leesbaar blijft. Een verloop bovenaan houdt de
-  titel leesbaar.
-- **Formaat** — liggend 16:9 (1920×1080, web/tv), vierkant (1080×1080, feed) of
-  verticaal (1080×1920, stories/Reels).
+- **Achtergrond** — **wit**, **Oost-lichtblauw**, **Oost-blauw** of
+  **Transparant** (PNG met doorzichtige achtergrond, bijv. om zelf onder een
+  tv-beeld te leggen). *(De foto-achtergrond staat uit; zet `FOTO_AAN` in
+  `index.html` op `true` om 'm terug te halen.)*
+- **Soort cijfers** — geef bij *Data aanpassen* aan of het om **absolute
+  getallen** of om **percentages** gaat. Bij percentages loopt de as altijd van
+  **0 tot 100**, zodat 60% ook echt 60% van de staaf/ring vult in plaats van
+  een volle staaf.
+- **Taart/donut: partjes van rijen of reeksen** — staan de categorieën als
+  kolommen (reeksen) in je tabel in plaats van als rijen? Zet *Partjes van* dan
+  op **Reeksen**. De legenda toont altijd **alle** partjes; regelhoogte en
+  lettergrootte krimpen mee als het er veel zijn.
+- **Dashboard-indeling** — kies bij het formaat hoeveel **ringen per rij** je
+  wilt (automatisch of 1–4). Met **1** staan ze onder elkaar, handig in een
+  verticaal formaat.
+- **Formaat** — liggend 16:9 (1920×1080, web/tv), liggend 4:3 (1440×1080),
+  vierkant (1080×1080, feed), staand 4:5 (1080×1350) of verticaal
+  (1080×1920, stories/Reels).
 - **Download PNG** of **Kopieer** naar het klembord.
 
 ---
@@ -86,12 +96,8 @@ een vaste link zonder iets te downloaden. Zie *Online zetten* hieronder.
 | **Balken** (horizontaal) | zelfde, maar met lange labels of veel categorieën |
 | **Gestapeld** | opbouw van een geheel (delen samen = totaal) |
 | **Lijn** | ontwikkeling door de tijd |
-| **Vlak** | ontwikkeling + volume |
 | **100% horizontaal** | verhoudingen per categorie (elke balk = 100%) |
-| **Kolom + lijn** | combinatie: eerste reeks als kolommen, de rest als lijn |
-| **Taart / Donut** | verdeling van één geheel (max ~6 delen) |
-| **Bellen** | vergelijking via bol-grootte (oppervlak ∝ waarde) |
-| **Rangschikking** (lollipop) | top-lijstjes, netter dan veel staven |
+| **Taart / Donut** | verdeling van één geheel (partjes uit de rijen óf de reeksen) |
 | **Dashboard** (ring-meters) | rij ring-meters met % per categorie (netjes gecentreerd) |
 
 Meerdere kolommen/reeksen naast elkaar? Zet gewoon meer kolommen in je data —
@@ -109,23 +115,21 @@ const HUISSTIJL = {
   fontFamily: "Roobert, Inter, 'Helvetica Neue', Arial, sans-serif",
   palet: [
     { naam:"Oost-blauw",       hex:"#1361ff" },
-    { naam:"Oost-oranje",      hex:"#ff6813" },
-    { naam:"Oost-groen",       hex:"#abbf3d" },
-    { naam:"Oost-paars",       hex:"#8f00ff" },
-    { naam:"Oost-rood",        hex:"#ff4242" },
     { naam:"Oost-geel",        hex:"#ffaf16" },
     { naam:"Oost-donkerblauw", hex:"#131720" },
   ],
-  // CVD-geoptimaliseerde reeksvolgorde (rood en groen niet naast elkaar)
-  reeksVolgorde: ["#1361ff","#ff6813","#abbf3d","#8f00ff","#ff4242","#ffaf16","#131720"],
+  reeksVolgorde: ["#1361ff","#ffaf16","#131720","#e7eef9"],
   ...
 };
 ```
 
-Achtergronden: wit, Oost-lichtblauw `#e7eef9`, Oost-blauw `#1361ff` en
-Oost-donkerblauw `#131720`. De reeksvolgorde is getoetst met de dataviz-validator
-(kleurenblind-veilig, worst adjacent ΔE 14.4). Oost-geel is fel, daarom staan
-waarde-labels en de datatabel standaard aan.
+Het palet is op verzoek van de redactie **klein gehouden**: Oost-blauw, geel,
+donkerblauw, lichtblauw en wit. Oranje, groen, paars en rood zijn er bewust uit
+gehaald. Wil je er later weer bij? Zet ze terug in `waardePalet` (en eventueel in
+`reeksVolgorde`) bovenaan `index.html`.
+
+Achtergronden: wit, Oost-lichtblauw `#e7eef9` en Oost-blauw `#1361ff`.
+Oost-geel is fel, daarom staan waarde-labels en de datatabel standaard aan.
 
 - **Lettertype:** de tool gebruikt **Roobert** (staat op de redactie-computers);
   op een computer zonder Roobert valt hij netjes terug op een systeemletter.
