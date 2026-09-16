@@ -87,9 +87,9 @@
     align-items:start;
   }
   /* Gesplitst scrollen (desktop): pagina staat vast; linkerkolom scrolt los.
-     Rechts scrolt óók, maar het voorbeeld plakt bovenaan en KRIMPT naar een
-     compacte versie zodra je naar de data scrolt — zo blijft de grafiek altijd
-     (verkleind) zichtbaar en krijgt de datatabel de ruimte. */
+     Rechts scrolt óók, waarbij het voorbeeld bovenaan plakt. Het voorbeeld is
+     standaard klein zodat de datatabel meteen in beeld staat; met een klik
+     (of de knop ernaast) maak je het groot. */
   @media(min-width:921px){
     html,body{height:100%;overflow:hidden}
     body{display:flex;flex-direction:column}
@@ -99,19 +99,19 @@
     .col-right{overflow-y:auto;min-height:0;overscroll-behavior:contain}
     .col-right .preview-card{position:sticky;top:0;z-index:6;flex:none;
       box-shadow:0 6px 18px rgba(11,27,51,.10)}
-    #preview{max-height:50vh;transition:max-height .28s ease}
-    .col-right.compact #preview{max-height:28vh}
-    .col-right.compact .preview-card h2{display:none}          /* compacte kop: meer ruimte voor de grafiek zelf */
-    .col-right.compact::after{content:"";display:block;flex:none;height:26vh}  /* houdt de scroll-ruimte stabiel (geen flikkeren) */
+    /* Het voorbeeld staat standaard KLEIN zodat de datatabel meteen in beeld
+       staat; klik op het voorbeeld (of op de knop ernaast) om te vergroten. */
+    .col-right #preview{max-height:30vh;transition:max-height .28s ease;cursor:zoom-in}
+    .col-right.groot #preview{max-height:58vh;cursor:zoom-out}
     /* handmatige stand via het sleepbalkje: vaste, zelfgekozen hoogte */
-    .col-right.manual #preview{max-height:var(--previewH,50vh);transition:none}
-    .col-right.manual .preview-card h2{display:revert}
+    .col-right.manual #preview{max-height:var(--previewH,30vh);transition:none}
     #splitter{display:flex;justify-content:center;align-items:center;padding:7px 0 1px;cursor:ns-resize;touch-action:none}
     #splitter span{width:64px;height:5px;border-radius:3px;background:var(--lijn);transition:.12s}
     #splitter:hover span{background:var(--oost-blauw);width:88px}
-    #editcard .tablewrap{max-height:52vh;overflow:auto;overscroll-behavior:contain}
+    #editcard .tablewrap{max-height:58vh;overflow:auto;overscroll-behavior:contain}
   }
-  @media(max-width:920px){ #splitter{display:none} }
+  /* smal scherm: geen gesplitst scrollen, dus ook geen sleepbalkje/vergrootknop */
+  @media(max-width:920px){ #splitter,#btnGrootte{display:none} }
   @media(max-width:920px){ .wrap{grid-template-columns:1fr} }
 
   .card{
@@ -217,13 +217,20 @@
   .empty svg{width:64px;height:64px;opacity:.35;margin-bottom:10px}
 
   /* data table */
-  table.data{border-collapse:collapse;width:100%;font-size:13px}
-  table.data th,table.data td{border:1px solid var(--lijn);padding:0}
-  table.data th{background:var(--vlak);padding:5px 7px;font-weight:600;text-align:left}
-  table.data input{border:0;border-radius:0;padding:6px 8px;font-size:13px}
+  table.data{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+  table.data th,table.data td{border:1px solid var(--lijn);border-width:0 1px 1px 0;padding:0}
+  table.data th:first-child,table.data td:first-child{border-left-width:1px}
+  table.data thead th{border-top-width:1px}
+  table.data th{background:var(--vlak);padding:3px 6px;font-weight:600;text-align:left}
+  /* kop blijft staan terwijl je door de rijen scrolt */
+  table.data thead th{position:sticky;top:0;z-index:2}
+  table.data th input{padding:3px 5px}
+  table.data input{border:0;border-radius:0;padding:3px 7px;font-size:13px;line-height:1.35}
   table.data input:focus{outline:2px solid var(--oost-blauw);outline-offset:-2px}
   table.data td.num input{text-align:right;font-variant-numeric:tabular-nums}
-  table.data td.del{width:26px;text-align:center}
+  /* ↑ ↓ ✕ náást elkaar i.p.v. gestapeld — scheelt twee derde rijhoogte */
+  table.data td.del{width:1%;white-space:nowrap;text-align:center;padding:0 2px}
+  table.data td.del .icon-btn{padding:0 3px;font-size:13px;line-height:1.6}
   .icon-btn{border:0;background:none;cursor:pointer;color:var(--ink-2);font-size:15px;padding:2px 6px;border-radius:6px}
   /* rijtje kleine keuzeknoppen (soort cijfers, taart-bron, dashboard-indeling) */
   .keuzerij{display:flex;flex-wrap:wrap;gap:6px}
@@ -231,6 +238,9 @@
     border:1px solid var(--lijn);border-radius:9px;padding:6px 12px;cursor:pointer;transition:.12s}
   .keuzeknop:hover{border-color:var(--oost-blauw);color:var(--oost-blauw)}
   .keuzeknop.on{background:var(--oost-blauw);border-color:var(--oost-blauw);color:#fff}
+  .voorbeeldkop{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .voorbeeldkop h2{margin:0}
+  .voorbeeldkop #btnGrootte{margin-left:auto;padding:4px 11px;font-size:12.5px}
   .annotrow{display:flex;gap:6px;align-items:center;margin-bottom:6px}
   .annotrow input{flex:1}
   .annotrow .icon-btn:hover{color:var(--oost-rood,#ff4242)}
@@ -376,6 +386,9 @@
         <b>2. Teksten &amp; grafiek kiezen.</b> Vul <b>Titel</b>, <b>Ondertitel</b> en <b>Bron</b> in (stap 2), kies een
         grafiektype (stap 3) en klik <b>Genereren</b>.<br><br>
         <b>3. Data aanpassen.</b> Wijzig cijfers in de tabel en klik <b>Grafiek bijwerken</b> (rechtsboven).
+        Met <b>Tab</b> loop je van cel naar cel, met <b>Enter</b> spring je een rij omlaag (onderaan maakt Enter
+        meteen een nieuwe rij) en met <b>Shift+Enter</b> weer omhoog. Het voorbeeld staat standaard klein zodat de
+        tabel in beeld staat — <b>klik op het voorbeeld</b> (of op <b>⤢ Vergroten</b>) om het groot te maken.
         Met <b>+ Rij</b>/<b>+ Reeks</b> voeg je toe, met <b>↑/↓</b> verschuif je de volgorde, en <b>✕</b> verwijdert.
         Foutje? <b>Ctrl+Z</b> (↶ Ongedaan) haalt het terug. Zet bij <b>Soort cijfers</b> of het om
         <b>absolute getallen</b> of om <b>percentages</b> gaat — bij percentages loopt de as altijd van 0 tot 100,
@@ -404,7 +417,10 @@
   <div class="col-right">
 
     <div class="card preview-card">
-      <h2>Voorbeeld</h2>
+      <div class="voorbeeldkop">
+        <h2>Voorbeeld</h2>
+        <button class="btn" id="btnGrootte" title="Voorbeeld vergroten">⤢ Vergroten</button>
+      </div>
       <div class="previewwrap">
         <div id="empty" class="empty">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="7"/><rect x="12" y="7" width="3" height="11"/><rect x="17" y="13" width="3" height="5"/></svg>
@@ -419,7 +435,7 @@
           <button class="btn" id="btnSave" title="Bewaar deze grafiek in de gedeelde bibliotheek">☁ In bibliotheek</button>
         </div>
       </div>
-      <div id="splitter" title="Sleep om het voorbeeld groter of kleiner te maken · dubbelklik = automatisch"><span></span></div>
+      <div id="splitter" title="Sleep om de hoogte fijn te regelen · dubbelklik = terug naar klein/groot"><span></span></div>
     </div>
 
     <div class="card hidden" id="editcard">
@@ -433,7 +449,7 @@
         <div class="keuzerij" id="eenheidKeuze"></div>
         <p class="hint" style="margin:5px 0 0">Bij <b>percentages</b> loopt de as altijd van 0 tot 100 — 60% vult dan ook echt 60% van de staaf.</p>
       </div>
-      <div class="tablewrap" style="overflow-x:auto"><table class="data" id="datatable"></table></div>
+      <div class="tablewrap"><table class="data" id="datatable"></table></div>
       <div class="btnrow" style="margin-top:10px">
         <button class="btn" id="btnAddRow">+ Rij</button>
         <button class="btn" id="btnAddSeries">+ Reeks</button>
@@ -1556,18 +1572,55 @@ function buildTypePicker(){
   });
 }
 
+/* Toetsenbord in de datatabel: Enter (of pijltje omlaag) springt naar dezelfde
+   kolom in de rij eronder, Shift+Enter/pijltje omhoog naar de rij erboven.
+   Enter op de laatste rij maakt meteen een nieuwe rij aan. Tab loopt al van cel
+   naar cel omdat de rijknoppen buiten de tab-volgorde staan. */
+function celNavigatie(e){
+  const inp=e.target;
+  if(!inp || inp.tagName!=="INPUT") return;
+  let omlaag;
+  if(e.key==="Enter") omlaag=!e.shiftKey;
+  else if(e.key==="ArrowDown") omlaag=true;
+  else if(e.key==="ArrowUp") omlaag=false;
+  else return;
+  const t=$("datatable");
+  let sel;
+  if(inp.dataset.l!=null) sel=r=>`input[data-l="${r}"]`;
+  else if(inp.dataset.r!=null){ const c=inp.dataset.c; sel=r=>`input[data-r="${r}"][data-c="${c}"]`; }
+  else return;                                    // reeksnaam in de kop: met rust laten
+  const rij=+(inp.dataset.l!=null ? inp.dataset.l : inp.dataset.r);
+  const doel=rij+(omlaag?1:-1);
+  if(doel<0) return;
+  let el=t.querySelector(sel(doel));
+  if(!el){
+    if(!omlaag || e.key!=="Enter") return;         // onderaan: alleen Enter maakt een rij bij
+    e.preventDefault();
+    $("btnAddRow").click();                        // bouwt de tabel opnieuw op
+    el=$("datatable").querySelector(sel(doel));
+    if(el){ el.focus(); el.select(); }
+    return;
+  }
+  e.preventDefault(); el.focus(); el.select();
+}
+
 function buildDataTable(){
   const t=$("datatable"); const d=state.data; t.innerHTML="";
-  const thead=document.createElement("tr");
-  thead.innerHTML=`<th>Label</th>`+d.series.map((s,j)=>`<th><input data-s="${j}" class="snaam" value="${escapeAttr(s.naam)}">${d.series.length>1?`<button class="icon-btn" data-dels="${j}" title="Reeks verwijderen">✕</button>`:""}</th>`).join("")+`<th></th>`;
-  t.appendChild(thead);
+  // echte <thead> zodat de kopregel blijft staan tijdens het scrollen (sticky)
+  const kop=document.createElement("thead");
+  kop.innerHTML=`<tr><th>Label</th>`+d.series.map((s,j)=>`<th><input data-s="${j}" class="snaam" value="${escapeAttr(s.naam)}">${d.series.length>1?`<button class="icon-btn" tabindex="-1" data-dels="${j}" title="Reeks verwijderen">✕</button>`:""}</th>`).join("")+`<th></th></tr>`;
+  t.appendChild(kop);
+  const body=document.createElement("tbody");
   d.labels.forEach((lab,i)=>{
     const tr=document.createElement("tr");
+    // de rijknoppen staan bewust buiten de tab-volgorde: Tab loopt zo van cel naar cel
     tr.innerHTML=`<td><input data-l="${i}" value="${escapeAttr(lab)}"></td>`+
       d.series.map((s,j)=>`<td class="num"><input data-r="${i}" data-c="${j}" value="${s.waarden[i]??""}"></td>`).join("")+
-      `<td class="del"><button class="icon-btn" data-up="${i}" title="Rij omhoog" ${i===0?"disabled":""}>↑</button><button class="icon-btn" data-down="${i}" title="Rij omlaag" ${i===d.labels.length-1?"disabled":""}>↓</button><button class="icon-btn" data-del="${i}" title="Rij verwijderen">✕</button></td>`;
-    t.appendChild(tr);
+      `<td class="del"><button class="icon-btn" tabindex="-1" data-up="${i}" title="Rij omhoog" ${i===0?"disabled":""}>↑</button><button class="icon-btn" tabindex="-1" data-down="${i}" title="Rij omlaag" ${i===d.labels.length-1?"disabled":""}>↓</button><button class="icon-btn" tabindex="-1" data-del="${i}" title="Rij verwijderen">✕</button></td>`;
+    body.appendChild(tr);
   });
+  t.appendChild(body);
+  t.onkeydown=celNavigatie;
   t.querySelectorAll("input").forEach(inp=>{ inp.oninput=onTableEdit;
     inp.onfocus=()=>{ pendingSnap=snapshot(); }; });               // snapshot vóór de eerste toets
   t.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.del;
@@ -1906,10 +1959,13 @@ $("btnFotoWeg").onclick=()=>{
   state.kleuren.achtergrond="#ffffff"; if(state.kleuren.tekst==="#ffffff") state.kleuren.tekst="#131720";
   buildColorControls(); render();
 };
+// Staat op true als de laatste muisactie op het doek een sleep (of een greep op
+// een tekstvak) was; de klik-om-te-vergroten slaat die dan over.
+let negeerCanvasKlik=false;
 // slepen in het voorbeeld: eerst de duiding-kadertjes (kader of stipje),
 // anders de achtergrondfoto verplaatsen (pan als fractie).
 (function(){
-  const cv=$("preview"); let lx=0, ly=0;
+  const cv=$("preview"); let lx=0, ly=0, downX=0, downY=0, greep=false;
   let mode=null;               // "annot-box" | "annot-dot" | "foto"
   let ann=null, offX=0, offY=0; // geselecteerde annotatie + grijp-offset
   const factor=()=> cv.width / (cv.getBoundingClientRect().width||cv.width);
@@ -1926,9 +1982,11 @@ $("btnFotoWeg").onclick=()=>{
     return null;
   }
   cv.addEventListener("pointerdown",e=>{
+    downX=e.clientX; downY=e.clientY; greep=false;
     if(!state.gegenereerd) return;
     const p=canvasPos(e), hit=annotHit(p.x,p.y);
     if(hit){
+      greep=true;
       mode=hit.mode; ann=hit.a;
       if(mode==="annot-box"){ offX=p.x-ann._box.x-ann._box.w/2; offY=p.y-ann._box.y-ann._box.h/2; }
       cv.classList.add("dragging"); try{ cv.setPointerCapture(e.pointerId); }catch(_){}
@@ -1958,7 +2016,12 @@ $("btnFotoWeg").onclick=()=>{
     lx=e.clientX; ly=e.clientY; render();
   });
   const stop=()=>{ mode=null; ann=null; cv.classList.remove("dragging"); };
-  cv.addEventListener("pointerup",stop); cv.addEventListener("pointercancel",stop);
+  cv.addEventListener("pointerup",e=>{
+    const verplaatst=Math.hypot(e.clientX-downX, e.clientY-downY)>4;
+    negeerCanvasKlik = greep || verplaatst;    // sleep -> geen grootte-wissel
+    stop();
+  });
+  cv.addEventListener("pointercancel",()=>{ negeerCanvasKlik=true; stop(); });
   // dubbelklik op een kader = tekst wijzigen
   cv.addEventListener("dblclick",e=>{
     if(!state.gegenereerd) return;
@@ -2113,28 +2176,36 @@ buildTypePicker();
   buildDataTable(); buildEenheidKeuze(); buildColorControls(); buildSizeButtons(); buildAnnotList(); render();
 })();
 
-/* Voorbeeld krimpt naar compact zodra je rechts naar de data scrolt (met
-   hysterese zodat het niet flikkert); omhoog scrollen maakt 'm weer groot.
-   Extra: in de tabel klikken terwijl die amper zichtbaar is -> ook krimpen. */
-(function(){
+/* Voorbeeld-grootte: standaard klein, zodat de datatabel meteen in beeld staat.
+   Klik op het voorbeeld of op de knop ernaast om te vergroten/verkleinen; de
+   keuze blijft bewaard. Het sleepbalkje blijft voor fijnregelen. */
+function zetVoorbeeldGroot(groot, doorGebruiker){
   const cr=document.querySelector(".col-right"); if(!cr) return;
-  const ec=document.getElementById("editcard");
-  const inTabel=()=> ec && ec.contains(document.activeElement);
-  const manual=()=> cr.classList.contains("manual");
-  cr.addEventListener("scroll",()=>{
-    if(manual()) return;                                       // sleepbalkje actief -> vaste hoogte
-    const sc=cr.scrollTop;
-    if(!cr.classList.contains("compact") && sc>110) cr.classList.add("compact");
-    // niet terug-uitklappen zolang je in de tabel aan het typen bent
-    else if(cr.classList.contains("compact") && sc<30 && !inTabel()) cr.classList.remove("compact");
-  },{passive:true});
-  if(ec) ec.addEventListener("focusin",()=>{
-    if(manual() || !matchMedia("(min-width:921px)").matches) return;
-    const tw=ec.querySelector(".tablewrap"); if(!tw) return;
-    const r=tw.getBoundingClientRect();
-    const zichtbaar=Math.min(r.bottom,innerHeight)-Math.max(r.top,0);
-    if(zichtbaar<240) cr.classList.add("compact");   // tabel amper in beeld -> maak ruimte
+  if(doorGebruiker){                                  // expliciete keuze wint van het sleepbalkje
+    cr.classList.remove("manual"); cr.style.removeProperty("--previewH");
+    try{ localStorage.removeItem("rh_preview_h"); }catch(_){}
+    try{ localStorage.setItem("rh_preview_groot", groot?"1":"0"); }catch(_){}
+  }
+  cr.classList.toggle("groot", !!groot);
+  const b=$("btnGrootte");
+  if(b){ b.textContent = groot ? "⤡ Verkleinen" : "⤢ Vergroten";
+         b.title = groot ? "Voorbeeld verkleinen" : "Voorbeeld vergroten"; }
+}
+function wisselVoorbeeldGrootte(){
+  const cr=document.querySelector(".col-right"); if(!cr) return;
+  zetVoorbeeldGroot(!cr.classList.contains("groot"), true);
+}
+(function(){
+  const b=$("btnGrootte"); if(b) b.onclick=wisselVoorbeeldGrootte;
+  const cv=$("preview");
+  // klik op het voorbeeld schakelt ook — maar niet als je net een tekstvak sleepte
+  if(cv) cv.addEventListener("click",()=>{
+    if(negeerCanvasKlik){ negeerCanvasKlik=false; return; }
+    wisselVoorbeeldGrootte();
   });
+  let groot=false;
+  try{ groot = localStorage.getItem("rh_preview_groot")==="1"; }catch(_){}
+  zetVoorbeeldGroot(groot, false);
 })();
 
 /* Sleepbalkje onder het voorbeeld: zelf de hoogte kiezen (blijft bewaard);
@@ -2145,7 +2216,7 @@ buildTypePicker();
   let drag=false, startY=0, startH=0;
   const zetHoogte=h=>{
     h=Math.max(120, Math.min(innerHeight*0.62, h));
-    cr.classList.add("manual"); cr.classList.remove("compact");
+    cr.classList.add("manual");
     cr.style.setProperty("--previewH", Math.round(h)+"px");
     try{ localStorage.setItem("rh_preview_h", String(Math.round(h))); }catch(_){}
   };
@@ -2158,7 +2229,7 @@ buildTypePicker();
   const stop=()=>{ drag=false; };
   sp.addEventListener("pointerup",stop); sp.addEventListener("pointercancel",stop);
   sp.addEventListener("dblclick",()=>{
-    cr.classList.remove("manual","compact"); cr.style.removeProperty("--previewH");
+    cr.classList.remove("manual"); cr.style.removeProperty("--previewH");
     try{ localStorage.removeItem("rh_preview_h"); }catch(_){}
   });
   try{ const h=+localStorage.getItem("rh_preview_h");

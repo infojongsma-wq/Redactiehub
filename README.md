@@ -48,10 +48,16 @@ een vaste link zonder iets te downloaden. Zie *Online zetten* hieronder.
   (uitlicht- en labelkleuren verhuizen mee). Iets per ongeluk verwijderd of
   overschreven? **Ctrl+Z** (of de **↶ Ongedaan**-knop) haalt het terug;
   **Ctrl+Y** doet het opnieuw.
-- **Voorbeeld-grootte** — scroll naar de data en het voorbeeld krimpt vanzelf
-  naar een compacte versie (en groeit weer bij terugscrollen). Liever zelf
-  bepalen? Sleep het **balkje onder het voorbeeld** naar de gewenste hoogte;
-  dubbelklik op het balkje om terug te gaan naar automatisch.
+- **Voorbeeld-grootte** — het voorbeeld staat **standaard klein**, zodat de
+  datatabel meteen in beeld staat. **Klik op het voorbeeld** (of op
+  **⤢ Vergroten** ernaast) om het groot te maken; je keuze blijft bewaard.
+  Fijnregelen kan met het **balkje onder het voorbeeld**; dubbelklik daarop om
+  terug te gaan naar de gekozen klein/groot-stand.
+- **Sneller invullen** — de tabel is compact en scrolt zelf, met een kopregel
+  die blijft staan. **Tab** loopt van cel naar cel (de ↑/↓/✕-knopjes worden
+  overgeslagen), **Enter** springt een rij omlaag in dezelfde kolom —
+  onderaan maakt Enter meteen een nieuwe rij — en **Shift+Enter** gaat weer
+  omhoog. De pijltjes omhoog/omlaag doen hetzelfde.
 - **Kleuren (huisstijl)** — kies tekstkleur en de kleur per reeks/segment. Het
   palet is bewust klein gehouden: **Oost-blauw, geel, donkerblauw, lichtblauw en
   wit**. Zo blijft het altijd RTV Oost.
