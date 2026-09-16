@@ -397,7 +397,9 @@
         tekstkleur en de kleur per reeks. Met <b>Uitlichten</b> geef je één losse staaf/kolom een eigen kleur
         (bijv. alleen Overijssel), met <b>Labelkleur</b> kleur je de labeltekst. Vink <b>Waarden tonen</b> aan/uit.
         Bij <b>taart/donut</b> kies je met <b>Partjes van</b> of de <b>rijen</b> of de <b>reeksen</b> de partjes
-        vormen — handig als de categorieën als kolommen in je tabel staan.<br><br>
+        vormen — handig als de categorieën als kolommen in je tabel staan. Daar staan bij
+        <b>Kleur per partje</b> ook <b>oranje, rood en groen</b>, omdat een taart of donut vaak meer partjes
+        heeft dan er kleuren in het gewone palet zitten.<br><br>
         <b>5. Tekstvak met duiding (stap 6).</b> Klik <b>+ Tekstvak</b> voor een kadertje met een lijntje naar een punt
         in de grafiek. <b>Sleep</b> het kader én het stipje in het voorbeeld naar de juiste plek; dubbelklik op een
         kader om de tekst te wijzigen. Het gaat mee in de PNG en in de bibliotheek.<br><br>
@@ -512,7 +514,18 @@ const HUISSTIJL = {
     { naam:"Oost-lichtblauw",  hex:"#e7eef9" },
     { naam:"Wit",              hex:"#ffffff" },
   ],
+  // Alleen taart en donut krijgen er oranje, rood en groen bij: die hebben vaak
+  // meer partjes dan er kleuren in het basispalet zitten.
+  taartExtra: [
+    { naam:"Oost-oranje",      hex:"#ff6813" },
+    { naam:"Oost-rood",        hex:"#ff4242" },
+    { naam:"Oost-groen",       hex:"#abbf3d" },
+  ],
 };
+// palet voor "kleur per partje/reeks/ring": taart en donut mogen de extra kleuren erbij
+const partjePalet = () => ["taart","donut"].includes(state.type)
+  ? HUISSTIJL.waardePalet.concat(HUISSTIJL.taartExtra)
+  : HUISSTIJL.waardePalet;
 
 // Foto als achtergrond staat uit. Zet op true om 'm (evt. onder "geavanceerd")
 // weer beschikbaar te maken; alle foto-code werkt dan weer zoals voorheen.
@@ -1703,7 +1716,7 @@ function buildColorControls(){
     const nm=document.createElement("span"); nm.className="nm"; nm.textContent=r.nm; row.appendChild(nm);
     const sr=document.createElement("div"); sr.className="swatchrow";
     const current=catColor(r.idx);
-    HUISSTIJL.waardePalet.forEach(c=>sr.appendChild(swatch(c.hex,c.naam, current===c.hex, ()=>{
+    partjePalet().forEach(c=>sr.appendChild(swatch(c.hex,c.naam, current===c.hex, ()=>{
       state.kleuren.reeks[r.idx]=c.hex; buildColorControls(); render();
     })));
     row.appendChild(sr); grp.appendChild(row);
