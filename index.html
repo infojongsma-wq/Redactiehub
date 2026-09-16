@@ -225,6 +225,12 @@
   table.data td.num input{text-align:right;font-variant-numeric:tabular-nums}
   table.data td.del{width:26px;text-align:center}
   .icon-btn{border:0;background:none;cursor:pointer;color:var(--ink-2);font-size:15px;padding:2px 6px;border-radius:6px}
+  /* rijtje kleine keuzeknoppen (soort cijfers, taart-bron, dashboard-indeling) */
+  .keuzerij{display:flex;flex-wrap:wrap;gap:6px}
+  .keuzeknop{font:600 13px var(--font);color:var(--ink);background:#fff;
+    border:1px solid var(--lijn);border-radius:9px;padding:6px 12px;cursor:pointer;transition:.12s}
+  .keuzeknop:hover{border-color:var(--oost-blauw);color:var(--oost-blauw)}
+  .keuzeknop.on{background:var(--oost-blauw);border-color:var(--oost-blauw);color:#fff}
   .annotrow{display:flex;gap:6px;align-items:center;margin-bottom:6px}
   .annotrow input{flex:1}
   .annotrow .icon-btn:hover{color:var(--oost-rood,#ff4242)}
@@ -323,6 +329,11 @@
         <div class="lbl">Tekstkleur</div>
         <div class="swatchrow" id="textSwatches"></div>
       </div>
+      <div class="colgrp hidden" id="taartBronGrp">
+        <div class="lbl">Partjes van</div>
+        <div class="keuzerij" id="taartBron"></div>
+        <p class="hint" style="margin:5px 0 0">Staan de categorieën als <b>rijen</b> onder elkaar of als <b>reeksen</b> (kolommen) naast elkaar in de tabel?</p>
+      </div>
       <div class="colgrp" id="seriesColorGrp">
         <div class="lbl">Kleur per reeks</div>
         <div id="seriesColors"></div>
@@ -341,6 +352,11 @@
     <div class="card hidden" id="formatcard">
       <h2><span class="step">5</span> Pas het formaat aan</h2>
       <div class="sizes" id="sizes"></div>
+      <div class="colgrp hidden" id="dashIndelingGrp" style="margin-top:12px">
+        <div class="lbl">Ringen per rij (dashboard)</div>
+        <div class="keuzerij" id="dashIndeling"></div>
+        <p class="hint" style="margin:5px 0 0">Kies <b>1</b> om de ringen onder elkaar te zetten — handig in een verticaal formaat.</p>
+      </div>
     </div>
 
     <div class="card hidden" id="annotcard">
@@ -361,14 +377,20 @@
         grafiektype (stap 3) en klik <b>Genereren</b>.<br><br>
         <b>3. Data aanpassen.</b> Wijzig cijfers in de tabel en klik <b>Grafiek bijwerken</b> (rechtsboven).
         Met <b>+ Rij</b>/<b>+ Reeks</b> voeg je toe, met <b>↑/↓</b> verschuif je de volgorde, en <b>✕</b> verwijdert.
-        Foutje? <b>Ctrl+Z</b> (↶ Ongedaan) haalt het terug.<br><br>
-        <b>4. Kleuren &amp; waarden (stap 4).</b> Kies achtergrond (huisstijlkleur, <b>transparant</b> of een <b>foto</b>),
+        Foutje? <b>Ctrl+Z</b> (↶ Ongedaan) haalt het terug. Zet bij <b>Soort cijfers</b> of het om
+        <b>absolute getallen</b> of om <b>percentages</b> gaat — bij percentages loopt de as altijd van 0 tot 100,
+        zodat 60% ook echt 60% van de staaf vult.<br><br>
+        <b>4. Kleuren &amp; waarden (stap 4).</b> Kies achtergrond (wit, lichtblauw, blauw of <b>transparant</b>),
         tekstkleur en de kleur per reeks. Met <b>Uitlichten</b> geef je één losse staaf/kolom een eigen kleur
-        (bijv. alleen Overijssel), met <b>Labelkleur</b> kleur je de labeltekst. Vink <b>Waarden tonen</b> aan/uit.<br><br>
+        (bijv. alleen Overijssel), met <b>Labelkleur</b> kleur je de labeltekst. Vink <b>Waarden tonen</b> aan/uit.
+        Bij <b>taart/donut</b> kies je met <b>Partjes van</b> of de <b>rijen</b> of de <b>reeksen</b> de partjes
+        vormen — handig als de categorieën als kolommen in je tabel staan.<br><br>
         <b>5. Tekstvak met duiding (stap 6).</b> Klik <b>+ Tekstvak</b> voor een kadertje met een lijntje naar een punt
         in de grafiek. <b>Sleep</b> het kader én het stipje in het voorbeeld naar de juiste plek; dubbelklik op een
         kader om de tekst te wijzigen. Het gaat mee in de PNG en in de bibliotheek.<br><br>
-        <b>6. Formaat, opslaan &amp; delen.</b> Kies het formaat (stap 5: liggend, vierkant of verticaal).
+        <b>6. Formaat, opslaan &amp; delen.</b> Kies het formaat (stap 5: liggend 16:9 of 4:3, vierkant,
+        staand 4:5 of verticaal). Bij een <b>dashboard</b> stel je daar ook het aantal <b>ringen per rij</b> in —
+        kies 1 om ze onder elkaar te zetten.
         <b>Download PNG</b> of <b>Kopieer</b> naar het klembord. Met <b>☁ In bibliotheek</b> bewaar je de grafiek voor
         de hele redactie; via <b>Bibliotheek</b> (bovenin) bekijk, download of <b>✎ bewerk</b> je bewaarde grafieken opnieuw.<br><br>
         <span style="color:var(--ink-2)">Huisstijl: <b>Oost-blauw</b> als hoofdkleur en het lettertype <b>Roobert</b> staan
@@ -406,6 +428,11 @@
         <button class="btn primary" id="btnUpdate">Grafiek bijwerken</button>
       </div>
       <p class="hint" style="margin-top:6px">Dit zijn de verwerkte cijfers. Pas ze aan en klik op <b>Grafiek bijwerken</b>.</p>
+      <div class="colgrp" style="margin:8px 0 10px">
+        <div class="lbl">Soort cijfers</div>
+        <div class="keuzerij" id="eenheidKeuze"></div>
+        <p class="hint" style="margin:5px 0 0">Bij <b>percentages</b> loopt de as altijd van 0 tot 100 — 60% vult dan ook echt 60% van de staaf.</p>
+      </div>
       <div class="tablewrap" style="overflow-x:auto"><table class="data" id="datatable"></table></div>
       <div class="btnrow" style="margin-top:10px">
         <button class="btn" id="btnAddRow">+ Rij</button>
@@ -444,21 +471,16 @@ const HUISSTIJL = {
   // Genoemde merkkleuren — deze verschijnen in de kleurkiezers.
   palet: [
     { naam:"Oost-blauw",       hex:"#1361ff" },
-    { naam:"Oost-oranje",      hex:"#ff6813" },
-    { naam:"Oost-groen",       hex:"#abbf3d" },
-    { naam:"Oost-paars",       hex:"#8f00ff" },
-    { naam:"Oost-rood",        hex:"#ff4242" },
     { naam:"Oost-geel",        hex:"#ffaf16" },
     { naam:"Oost-donkerblauw", hex:"#131720" },
   ],
   // Vaste, niet-cyclische reeksvolgorde (CVD-geoptimaliseerd).
-  reeksVolgorde: ["#1361ff","#ff6813","#abbf3d","#8f00ff","#ff4242","#ffaf16","#131720"],
+  reeksVolgorde: ["#1361ff","#ffaf16","#131720","#e7eef9"],
 
   achtergronden: [
     { naam:"Wit",              hex:"#ffffff" },
     { naam:"Oost-lichtblauw",  hex:"#e7eef9" },
     { naam:"Oost-blauw",       hex:"#1361ff" },
-    { naam:"Oost-donkerblauw", hex:"#131720" },
   ],
   teksten: [
     { naam:"Donkerblauw",     hex:"#131720" },
@@ -466,19 +488,19 @@ const HUISSTIJL = {
     { naam:"Oost-blauw",      hex:"#1361ff" },
     { naam:"Oost-lichtblauw", hex:"#e7eef9" },
   ],
-  // kleuren voor reeksen/waarden: merkkleuren + lichtblauw + wit (mooi op donkere/blauwe achtergrond)
+  // kleuren voor reeksen/segmenten/uitlichten/labels — bewust beperkt gehouden
   waardePalet: [
     { naam:"Oost-blauw",       hex:"#1361ff" },
-    { naam:"Oost-oranje",      hex:"#ff6813" },
-    { naam:"Oost-groen",       hex:"#abbf3d" },
-    { naam:"Oost-paars",       hex:"#8f00ff" },
-    { naam:"Oost-rood",        hex:"#ff4242" },
     { naam:"Oost-geel",        hex:"#ffaf16" },
     { naam:"Oost-donkerblauw", hex:"#131720" },
     { naam:"Oost-lichtblauw",  hex:"#e7eef9" },
     { naam:"Wit",              hex:"#ffffff" },
   ],
 };
+
+// Foto als achtergrond staat uit. Zet op true om 'm (evt. onder "geavanceerd")
+// weer beschikbaar te maken; alle foto-code werkt dan weer zoals voorheen.
+const FOTO_AAN = false;
 
 /* ============================================================================
    2. GRAFIEKTYPES
@@ -488,15 +510,14 @@ const CHARTS = [
   { id:"staaf",     naam:"Balken",           icon:iconStaaf },
   { id:"gestapeld", naam:"Gestapeld",        icon:iconGestapeld },
   { id:"stapel100h",naam:"100% horizontaal", icon:iconStapel100 },
-  { id:"combo",     naam:"Kolom + lijn",     icon:iconCombo },
   { id:"lijn",      naam:"Lijn",             icon:iconLijn },
-  { id:"vlak",      naam:"Vlak",             icon:iconVlak },
   { id:"taart",     naam:"Taart",            icon:iconTaart },
   { id:"donut",     naam:"Donut",            icon:iconDonut },
-  { id:"bellen",    naam:"Bellen",           icon:iconBellen },
-  { id:"lollipop",  naam:"Rangschikking",    icon:iconLolli },
   { id:"dashboard", naam:"Dashboard",        icon:iconDashboard },
 ];
+// vervallen types uit oudere bewaarde grafieken -> dichtstbijzijnde vervanger
+const OUDE_TYPES = { combo:"kolom", vlak:"lijn", bellen:"kolom", lollipop:"staaf" };
+const geldigType = t => CHARTS.some(c=>c.id===t) ? t : (OUDE_TYPES[t] || "kolom");
 
 /* ============================================================================
    3. STATE
@@ -509,7 +530,7 @@ const state = {
     achtergrond: "#ffffff",   // hex, of "transparant"
     tekst: "#131720",
     reeks: HUISSTIJL.reeksVolgorde.slice(),
-    uitgelicht: {},           // per label-index een afwijkende staaf-/kolomkleur, bv. {3:"#ff6813"}
+    uitgelicht: {},           // per label-index een afwijkende staaf-/kolomkleur, bv. {3:"#ffaf16"}
     labelKleur: {},           // per label-index een afwijkende tékstkleur voor het label
   },
   fotoActief: false,
@@ -521,11 +542,16 @@ const state = {
   // [0..1] van het doek -> formaat-onafhankelijk. x/y = midden van het kader,
   // ax/ay = het punt waar het lijntje naar wijst.
   annotaties: [],   // [{ tekst, x, y, ax, ay }]
+  eenheid: "absoluut",    // "absoluut" | "procent" -> bij procent is de as altijd 0–100
+  taartBron: "rijen",     // taart/donut: vormen de RIJEN of de REEKSEN de partjes?
+  dashKolommen: 0,        // dashboard: 0 = automatisch, anders 1..4 ringen per rij
 };
 
 const FORMATEN = [
   { id:"web",   naam:"Liggend 16:9", w:1920, h:1080 },
+  { id:"lig43", naam:"Liggend 4:3",  w:1440, h:1080 },
   { id:"vierk", naam:"Vierkant",     w:1080, h:1080 },
+  { id:"port45",naam:"Staand 4:5",   w:1080, h:1350 },
   { id:"story", naam:"Verticaal",    w:1080, h:1920 },
 ];
 
@@ -882,10 +908,6 @@ function relLum(hex){
   return .2126*f(r)+.7152*f(g)+.0722*f(b);
 }
 function isDark(hex){ return relLum(hex) < 0.4; }
-function withAlpha(hex,a){
-  const c=hex.replace("#",""); const n=c.length===3?c.split("").map(x=>x+x).join(""):c;
-  return `rgba(${parseInt(n.slice(0,2),16)},${parseInt(n.slice(2,4),16)},${parseInt(n.slice(4,6),16)},${a})`;
-}
 // kleur voor de i-e reeks (staaf/lijn) of het i-e segment (taart/donut).
 // Valt terug op de huisstijlvolgorde als er meer categorieën dan ingestelde kleuren zijn.
 function catColor(i){ return state.kleuren.reeks[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]; }
@@ -924,6 +946,31 @@ function niceNum(x,round){
   if(round){ nf = frac<1.5?1 : frac<3?2 : frac<7?5 : 10; }
   else     { nf = frac<=1?1 : frac<=2?2 : frac<=5?5 : 10; }
   return nf*Math.pow(10,exp);
+}
+
+/* Percentages hebben een vaste schaal 0–100: 60% hoort een staaf tot 60% te
+   geven, niet een volle staaf. Alleen bij absolute getallen schaalt de as mee
+   met de data. Negatieve waarden vallen terug op de gewone schaal. */
+const isProcent = () => state.eenheid==="procent";
+function schaalVoor(dmin,dmax,ticks){
+  if(isProcent() && dmin>=0) return { min:0, max:100, step:20, ticks:[0,20,40,60,80,100] };
+  return niceScale(dmin,dmax,ticks);
+}
+const fmtWaarde = v => fmtNum(v)+(isProcent()?"%":"");
+
+/* Taart/donut: vormen de RIJEN de partjes (standaard) of de REEKSEN?
+   Bij "reeksen" telt elke reeks op over alle rijen — zo werkt het ook als de
+   categorieën als kolommen in de tabel staan. idx = index in de kleurenlijst. */
+function taartItems(data){
+  if(state.taartBron==="reeksen"){
+    return data.series.map((s,j)=>({
+      l: s.naam || ("Reeks "+(j+1)),
+      v: Math.max(0, s.waarden.reduce((a,x)=>a+(x||0),0)),
+      idx: j,
+    }));
+  }
+  const s=data.series[0];
+  return data.labels.map((l,i)=>({ l: l||("Rij "+(i+1)), v: Math.max(0, (s&&s.waarden[i])||0), idx:i }));
 }
 function wrapText(ctx,text,maxW){
   const words=text.split(" "); const lines=[]; let line="";
@@ -1001,14 +1048,14 @@ function render(){
   }
 
   // reeks-legenda alleen bij grafiektypes met meerdere reeksen naast elkaar
-  const legendTypes = ["kolom","staaf","gestapeld","stapel100h","combo","lijn","vlak"];
+  const legendTypes = ["kolom","staaf","gestapeld","stapel100h","lijn"];
   const showTopLegend = data.series.length>1 && legendTypes.includes(state.type);
   const legendH = showTopLegend ? drawLegend(ctx,plot,S,F,ink) : 0;
   // Kopruimte boven het plotgebied: bij staande grafieken reikt een hoge staaf/
   // punt (waarde = as-maximum) tot bovenaan, en het waarde-label staat daar nóg
   // bóven — dat liep anders door de titel/ondertitel heen. Reserveer daarom wat
   // ruimte (ruimer als de waarde-labels aanstaan).
-  const staand = ["kolom","gestapeld","lijn","vlak","combo"].includes(state.type);
+  const staand = ["kolom","gestapeld","lijn"].includes(state.type);
   const topPad = staand ? (state.toonWaarden ? Math.round(48*S) : Math.round(16*S)) : 0;
   const p2={ ...plot, y:plot.y+legendH+topPad, h:plot.h-legendH-topPad };
 
@@ -1017,14 +1064,10 @@ function render(){
     case "kolom":     drawBars(ctx,p2,data,ctxColors,false); break;
     case "staaf":     drawBars(ctx,p2,data,ctxColors,true);  break;
     case "gestapeld": drawStacked(ctx,p2,data,ctxColors);    break;
-    case "lijn":      drawLine(ctx,p2,data,ctxColors,false); break;
-    case "vlak":      drawLine(ctx,p2,data,ctxColors,true);  break;
+    case "lijn":      drawLine(ctx,p2,data,ctxColors);       break;
     case "taart":     drawPie(ctx,p2,data,ctxColors,0);      break;
     case "donut":     drawPie(ctx,p2,data,ctxColors,0.58);   break;
     case "stapel100h":drawStacked100h(ctx,p2,data,ctxColors);break;
-    case "combo":     drawCombo(ctx,p2,data,ctxColors);      break;
-    case "bellen":    drawBubbels(ctx,p2,data,ctxColors);    break;
-    case "lollipop":  drawLollipop(ctx,p2,data,ctxColors);   break;
     case "dashboard": drawDashboard(ctx,p2,data,ctxColors);  break;
   }
 
@@ -1162,12 +1205,12 @@ function drawBars(ctx,plot,data,C,horizontal){
   const ns=data.series.length, nl=data.labels.length;
   let dmin=0,dmax=0;
   data.series.forEach(s=>s.waarden.forEach(v=>{ if(v==null) return; dmax=Math.max(dmax,v); dmin=Math.min(dmin,v); }));
-  const sc=niceScale(dmin,dmax,6);
+  const sc=schaalVoor(dmin,dmax,6);
 
   if(!horizontal){
-    const axW=measureYAxis(ctx,sc,C,fmtNum);
+    const axW=measureYAxis(ctx,sc,C,fmtWaarde);
     const p={x:plot.x+axW,y:plot.y,w:plot.w-axW,h:plot.h-Math.round(44*S)};
-    yAxisAndGrid(ctx,p,sc,C,fmtNum);
+    yAxisAndGrid(ctx,p,sc,C,fmtWaarde);
     const band=p.w/nl, groupW=band*0.72, bw=groupW/ns;
     const zeroY=p.y+p.h-((0-sc.min)/(sc.max-sc.min))*p.h;
     for(let i=0;i<nl;i++){
@@ -1182,7 +1225,7 @@ function drawBars(ctx,plot,data,C,horizontal){
         if(state.toonWaarden && (ns*nl)<=28){
           ctx.fillStyle=ink; ctx.font=`700 ${Math.round(32*S)}px ${F}`;
           ctx.textAlign="center"; ctx.textBaseline="bottom";
-          ctx.fillText(fmtNum(v), x+bwe/2, top-Math.round(6*S)); ctx.textBaseline="top";
+          ctx.fillText(fmtWaarde(v), x+bwe/2, top-Math.round(6*S)); ctx.textBaseline="top";
         }
       }
       ctx.fillStyle=labelInk(i,muted); ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
@@ -1197,14 +1240,14 @@ function drawBars(ctx,plot,data,C,horizontal){
     ctx.font=`600 ${Math.round(34*S)}px ${F}`;
     let lw=0; data.labels.forEach(l=>lw=Math.max(lw,ctx.measureText(l).width)); lw=Math.min(lw+20*S, plot.w*0.32);
     const p={x:plot.x+lw,y:plot.y,w:plot.w-lw,h:plot.h-Math.round(44*S)};  // ruimte voor de x-as-getallen boven de voetlijn
-    const scx=niceScale(dmin,dmax,6);
+    const scx=schaalVoor(dmin,dmax,6);
     // verticale rasterlijnen
     ctx.strokeStyle=C.grid; ctx.lineWidth=Math.max(1,1*S); ctx.font=`500 ${Math.round(32*S)}px ${F}`;
     ctx.textBaseline="top"; ctx.textAlign="center";
     for(const t of scx.ticks){
       const x=p.x+((t-scx.min)/(scx.max-scx.min))*p.w;
       ctx.beginPath(); ctx.moveTo(x,p.y); ctx.lineTo(x,p.y+p.h); ctx.stroke();
-      ctx.fillStyle=muted; ctx.fillText(fmtNum(t),x,p.y+p.h+Math.round(8*S));
+      ctx.fillStyle=muted; ctx.fillText(fmtWaarde(t),x,p.y+p.h+Math.round(8*S));
     }
     const band=p.h/nl, groupH=band*0.72, bh=groupH/ns;
     const zeroX=p.x+((0-scx.min)/(scx.max-scx.min))*p.w;
@@ -1220,7 +1263,7 @@ function drawBars(ctx,plot,data,C,horizontal){
         if(state.toonWaarden && (ns*nl)<=28){
           ctx.fillStyle=ink; ctx.font=`700 ${Math.round(32*S)}px ${F}`;
           ctx.textAlign="left"; ctx.textBaseline="middle";
-          ctx.fillText(fmtNum(v), Math.max(vx,zeroX)+Math.round(8*S), y+bhe/2);
+          ctx.fillText(fmtWaarde(v), Math.max(vx,zeroX)+Math.round(8*S), y+bhe/2);
         }
       }
       ctx.fillStyle=labelInk(i,ink); ctx.font=`600 ${Math.round(34*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
@@ -1259,10 +1302,10 @@ function drawStacked(ctx,plot,data,C){
     ctx.fillText("Gestapeld kan geen negatieve waarden tonen", plot.x+plot.w/2, plot.y+plot.h/2);
     ctx.textAlign="left"; return;
   }
-  const sc=niceScale(0,Math.max(...totals,1),6);
-  const axW=measureYAxis(ctx,sc,C,fmtNum);
+  const sc=schaalVoor(0,Math.max(...totals,1),6);
+  const axW=measureYAxis(ctx,sc,C,fmtWaarde);
   const p={x:plot.x+axW,y:plot.y,w:plot.w-axW,h:plot.h-Math.round(44*S)};
-  yAxisAndGrid(ctx,p,sc,C,fmtNum);
+  yAxisAndGrid(ctx,p,sc,C,fmtWaarde);
   const band=p.w/nl, bw=band*0.6;
   for(let i=0;i<nl;i++){
     let acc=0; const x=p.x+band*i+(band-bw)/2;
@@ -1284,15 +1327,15 @@ function drawStacked(ctx,plot,data,C){
   ctx.textAlign="left";
 }
 
-function drawLine(ctx,plot,data,C,area){
+function drawLine(ctx,plot,data,C){
   const {S,F,ink,muted,axis}=C;
   const nl=data.labels.length, ns=data.series.length;
   let dmin=0,dmax=0;
   data.series.forEach(s=>s.waarden.forEach(v=>{ if(v==null) return; dmax=Math.max(dmax,v); dmin=Math.min(dmin,v); }));
-  const sc=niceScale(dmin,dmax,6);
-  const axW=measureYAxis(ctx,sc,C,fmtNum);
+  const sc=schaalVoor(dmin,dmax,6);
+  const axW=measureYAxis(ctx,sc,C,fmtWaarde);
   const p={x:plot.x+axW,y:plot.y,w:plot.w-axW,h:plot.h-Math.round(44*S)};
-  yAxisAndGrid(ctx,p,sc,C,fmtNum);
+  yAxisAndGrid(ctx,p,sc,C,fmtWaarde);
   const step= nl>1 ? p.w/(nl-1) : 0;
   const X=i=> nl>1 ? p.x+step*i : p.x+p.w/2;
   const Y=v=> p.y+p.h-((v-sc.min)/(sc.max-sc.min))*p.h;
@@ -1301,13 +1344,6 @@ function drawLine(ctx,plot,data,C,area){
   //    ronde zodat ze altijd vóór álle lijnen staan (en dus leesbaar blijven).
   for(let j=0;j<ns;j++){
     const col=catColor(j), pts=allPts[j];
-    const heeftGat=pts.some(pt=>!pt);
-    if(area && ns<=2 && !heeftGat){
-      ctx.beginPath(); ctx.moveTo(pts[0][0],Y(Math.max(0,sc.min)));
-      pts.forEach(pt=>ctx.lineTo(pt[0],pt[1]));
-      ctx.lineTo(pts[pts.length-1][0],Y(Math.max(0,sc.min)));
-      ctx.closePath(); ctx.fillStyle=withAlpha(col,.16); ctx.fill();
-    }
     ctx.strokeStyle=col; ctx.lineWidth=Math.max(3,4.5*S); ctx.lineJoin="round"; ctx.lineCap="round";
     ctx.beginPath(); let started=false;
     pts.forEach(pt=>{ if(!pt){ started=false; return; } if(started) ctx.lineTo(pt[0],pt[1]); else { ctx.moveTo(pt[0],pt[1]); started=true; } });
@@ -1326,7 +1362,7 @@ function drawLine(ctx,plot,data,C,area){
       const vals=data.series[j].waarden, pts=allPts[j], above=j%2===0;
       ctx.textBaseline= above?"bottom":"top";
       pts.forEach((pt,i)=>{ if(!pt) return;
-        const tx=pt[0], ty=pt[1]+(above?-Math.round(15*S):Math.round(15*S)), txt=fmtNum(vals[i]);
+        const tx=pt[0], ty=pt[1]+(above?-Math.round(15*S):Math.round(15*S)), txt=fmtWaarde(vals[i]);
         ctx.lineWidth=Math.max(3,5*S); ctx.strokeStyle=halo; ctx.strokeText(txt,tx,ty);   // achtergrond-contour
         ctx.fillStyle=ink; ctx.fillText(txt,tx,ty);
       });
@@ -1345,9 +1381,7 @@ function drawLine(ctx,plot,data,C,area){
 
 function drawPie(ctx,plot,data,C,innerRatio){
   const {S,F,ink,muted,darkBg,transp,foto}=C;
-  const s=data.series[0];
-  const items=data.labels.map((l,i)=>({l, v:Math.max(0,s.waarden[i]||0), c:catColor(i), idx:i}))
-                         .filter(it=>it.v>0);
+  const items=taartItems(data).map(it=>({ ...it, c:catColor(it.idx) })).filter(it=>it.v>0);
   if(!items.length){                                              // geen positieve waarden -> melding i.p.v. leeg canvas
     ctx.fillStyle=muted; ctx.textAlign="center"; ctx.font=`500 ${Math.round(30*S)}px ${F}`;
     ctx.fillText("Geen positieve waarden voor een taart-/donutgrafiek", plot.x+plot.w/2, plot.y+plot.h/2);
@@ -1385,57 +1419,32 @@ function drawPie(ctx,plot,data,C,innerRatio){
     ctx.fillStyle=muted; ctx.font=`600 ${Math.round(22*S)}px ${F}`; ctx.textBaseline="top";
     ctx.fillText("totaal", cx, cy+Math.round(14*S));
   }
-  // legenda rechts (begrensd tot wat past; rest als "+ N meer")
-  ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.font=`600 ${Math.round(36*S)}px ${F}`;
-  const lx=plot.x+plot.w*0.66, rowH=Math.round(46*S);
-  const maxRows=Math.max(1, Math.floor(plot.h/rowH));
-  const overflow=items.length>maxRows;
-  const shown=overflow? items.slice(0, maxRows-1) : items;
-  let ly=Math.max(plot.y+Math.round(20*S), cy-((shown.length+(overflow?1:0))*rowH)/2+Math.round(20*S));
-  shown.forEach(it=>{
-    ctx.fillStyle=it.c; const b=Math.round(24*S);
+  // Legenda rechts. De regelhoogte en het lettertype krimpen net zo ver als
+  // nodig zodat ÁLLE partjes in de legenda passen (geen "+ N meer" meer).
+  const lx=plot.x+plot.w*0.66, legW=plot.w-(lx-plot.x);
+  let rowH=Math.round(46*S), fs=Math.round(36*S);
+  const ruimte=plot.h-Math.round(10*S);
+  if(items.length*rowH > ruimte){
+    rowH=Math.max(Math.round(22*S), Math.floor(ruimte/items.length));
+    fs=Math.max(Math.round(17*S), Math.min(fs, Math.round(rowH*0.70)));
+  }
+  ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.font=`600 ${fs}px ${F}`;
+  const b=Math.max(Math.round(10*S), Math.min(Math.round(24*S), Math.round(rowH*0.52)));
+  let ly=Math.max(plot.y+rowH/2, cy-(items.length*rowH)/2+rowH/2);
+  items.forEach(it=>{
+    ctx.fillStyle=it.c;
     ctx.beginPath(); ctx.roundRect?ctx.roundRect(lx,ly-b/2,b,b,Math.round(6*S)):ctx.rect(lx,ly-b/2,b,b); ctx.fill();
+    const tx=lx+b+Math.round(12*S);
+    const cijfer=" "+fmtNum(it.v)+" · "+Math.round(it.v/total*100)+"%";
+    const cw=ctx.measureText(cijfer).width;
     ctx.fillStyle=labelInk(it.idx,ink);
-    ctx.fillText(fitLabel(ctx,`${it.l}`,plot.w*0.30)+"  ", lx+b+Math.round(12*S), ly);
-    const tw=ctx.measureText(it.l).width;
-    ctx.fillStyle=muted; ctx.fillText(fmtNum(it.v)+" · "+Math.round(it.v/total*100)+"%", lx+b+Math.round(12*S)+tw+Math.round(16*S), ly);
+    const naam=fitLabel(ctx,`${it.l}`, Math.max(20*S, legW-(tx-lx)-cw-Math.round(14*S)));
+    ctx.fillText(naam, tx, ly);
+    ctx.fillStyle=muted; ctx.fillText(cijfer, tx+ctx.measureText(naam).width, ly);
     ly+=rowH;
   });
-  if(overflow){ ctx.fillStyle=muted; ctx.font=`600 ${Math.round(33*S)}px ${F}`;
-    ctx.fillText("+ "+(items.length-shown.length)+" meer", lx, ly); }
   ctx.textBaseline="top";
 }
-
-function drawLollipop(ctx,plot,data,C){
-  const {S,F,ink,muted,grid}=C;
-  const s=data.series[0];
-  const items=data.labels.map((l,i)=>({l,v:s.waarden[i]||0,idx:i})).sort((a,b)=>b.v-a.v);
-  const dmax=Math.max(...items.map(it=>it.v),1), dmin=Math.min(0,...items.map(it=>it.v));
-  const sc=niceScale(dmin,dmax,6);
-  ctx.font=`600 ${Math.round(35*S)}px ${F}`;
-  let lw=0; items.forEach(it=>lw=Math.max(lw,ctx.measureText(it.l).width)); lw=Math.min(lw+20*S,plot.w*0.34);
-  const p={x:plot.x+lw,y:plot.y,w:plot.w-lw,h:plot.h-Math.round(20*S)};
-  const zeroX=p.x+((0-sc.min)/(sc.max-sc.min))*p.w;
-  ctx.strokeStyle=grid; ctx.lineWidth=Math.max(1,1*S); ctx.font=`500 ${Math.round(32*S)}px ${F}`;
-  ctx.textAlign="center"; ctx.textBaseline="top";
-  for(const t of sc.ticks){ const x=p.x+((t-sc.min)/(sc.max-sc.min))*p.w;
-    ctx.beginPath(); ctx.moveTo(x,p.y); ctx.lineTo(x,p.y+p.h); ctx.stroke();
-    ctx.fillStyle=muted; ctx.fillText(fmtNum(t),x,p.y+p.h+Math.round(8*S)); }
-  const band=p.h/items.length;
-  items.forEach((it,i)=>{
-    const col=markColor(barColor(it.idx,0,1));   // uitgelichte kleur per label mogelijk
-    const cy=p.y+band*i+band/2, vx=p.x+((it.v-sc.min)/(sc.max-sc.min))*p.w;
-    ctx.strokeStyle=col; ctx.lineWidth=Math.max(2,3*S); ctx.lineCap="round";
-    ctx.beginPath(); ctx.moveTo(zeroX,cy); ctx.lineTo(vx,cy); ctx.stroke();
-    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(vx,cy,Math.max(6,9*S),0,7); ctx.fill();
-    ctx.fillStyle=labelInk(it.idx,ink); ctx.font=`600 ${Math.round(35*S)}px ${F}`; ctx.textAlign="right"; ctx.textBaseline="middle";
-    ctx.fillText(fitLabel(ctx,it.l,lw-10*S), plot.x+lw-Math.round(14*S), cy);
-    if(state.toonWaarden){ ctx.textAlign="left"; ctx.font=`700 ${Math.round(33*S)}px ${F}`;
-      ctx.fillText(fmtNum(it.v), vx+Math.round(16*S), cy); }
-  });
-  ctx.textAlign="left"; ctx.textBaseline="top";
-}
-
 
 // Dashboard: rij ring-meters, één per categorie (eerste reeks). Elk toont het cijfer in het midden.
 function drawDashboard(ctx,plot,data,C){
@@ -1446,16 +1455,21 @@ function drawDashboard(ctx,plot,data,C){
     ctx.fillText("Geen data", plot.x+plot.w/2, plot.y+plot.h/2); ctx.textAlign="left"; return; }
   const vals=items.map(it=>it.v);
   const dmax=Math.max(...vals,0), dmin=Math.min(...vals,0);
-  const pctMode = dmin>=0 && dmax<=100;                       // waarden 0..100 -> tonen als percentage van 100
+  // percentage: ring vult v/100. Absoluut: ring vult v/ (nette max).
+  const pctMode = isProcent() || (state.eenheid!=="absoluut" && dmin>=0 && dmax<=100);
   const scaleMax = pctMode ? 100 : (niceScale(0, dmax||1, 5).max || 1);
   const anyDec = vals.some(v=> Math.abs(v-Math.round(v))>1e-9);
   const fmtG = v => (anyDec ? v.toLocaleString("nl-NL",{minimumFractionDigits:1,maximumFractionDigits:1})
                             : v.toLocaleString("nl-NL",{maximumFractionDigits:0}));
-  // gebalanceerd raster: max 4 per rij; laatste (deel)rij wordt gecentreerd
+  // Raster: standaard gebalanceerd (max 4 per rij, laatste deelrij gecentreerd).
+  // Met "ringen per rij" (stap 5) kies je het zelf — bv. 3 ringen onder elkaar
+  // in een verticaal formaat door 1 per rij te kiezen.
   const n=items.length;
-  const maxPerRij=4;
-  const rows=Math.max(1, Math.ceil(n/maxPerRij));
-  const cols=Math.ceil(n/rows);                 // 6->3+3, 7->4+3, 4->4, 8->4+4, 5->3+2
+  const vast=Math.max(0, Math.min(4, state.dashKolommen|0));
+  let cols;
+  if(vast>0){ cols=Math.min(vast, n); }
+  else { const maxPerRij=4, r=Math.max(1, Math.ceil(n/maxPerRij)); cols=Math.ceil(n/r); }
+  const rows=Math.max(1, Math.ceil(n/cols));    // auto: 6->3+3, 7->4+3, 4->4, 8->4+4, 5->3+2
   const cellW=plot.w/cols, cellH=plot.h/rows;
   const track = darkBg ? "rgba(255,255,255,.20)" : "rgba(19,23,32,.12)";
   items.forEach((it,k)=>{
@@ -1525,81 +1539,6 @@ function drawStacked100h(ctx,plot,data,C){
   ctx.textAlign="left"; ctx.textBaseline="top";
 }
 
-// Kolom + lijn: eerste reeks als kolommen, overige reeksen als lijn (gedeelde as)
-function drawCombo(ctx,plot,data,C){
-  const {S,F,ink,muted,axis}=C;
-  const nl=data.labels.length, ns=data.series.length;
-  let dmin=0,dmax=0;
-  data.series.forEach(s=>s.waarden.forEach(v=>{ if(v==null)return; dmax=Math.max(dmax,v); dmin=Math.min(dmin,v); }));
-  const sc=niceScale(dmin,dmax,6);
-  const axW=measureYAxis(ctx,sc,C,fmtNum);
-  const p={x:plot.x+axW, y:plot.y, w:plot.w-axW, h:plot.h-Math.round(44*S)};
-  yAxisAndGrid(ctx,p,sc,C,fmtNum);
-  const band=p.w/nl, Y=v=>p.y+p.h-((v-sc.min)/(sc.max-sc.min))*p.h, X=i=>p.x+band*i+band/2, zeroY=Y(0), bw=band*0.5;
-  // 1) kolommen (waarde-labels volgen in de laatste ronde, bovenop de lijn)
-  for(let i=0;i<nl;i++){
-    const v=data.series[0].waarden[i]; if(v==null) continue;
-    const x=p.x+band*i+(band-bw)/2, vy=Y(v);
-    ctx.fillStyle=catColor(0);
-    drawRR(ctx,x,Math.min(vy,zeroY),bw,Math.abs(vy-zeroY),Math.round(5*S), v>=0?"top":"bottom");
-  }
-  // 2) lijn(en) + markers
-  for(let j=1;j<ns;j++){
-    const col=catColor(j), vals=data.series[j].waarden;
-    const pts=vals.map((v,i)=> v==null? null : [X(i),Y(v)]);
-    ctx.strokeStyle=col; ctx.lineWidth=Math.max(3,4*S); ctx.lineJoin="round"; ctx.lineCap="round";
-    ctx.beginPath(); let started=false;
-    pts.forEach(pt=>{ if(!pt){started=false;return;} if(started) ctx.lineTo(pt[0],pt[1]); else { ctx.moveTo(pt[0],pt[1]); started=true; } });
-    ctx.stroke();
-    pts.forEach(pt=>{ if(!pt)return;
-      ctx.fillStyle=currentSurface(); ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(5,6*S),0,7); ctx.fill();
-      ctx.fillStyle=col; ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(3.5,4.5*S),0,7); ctx.fill();
-    });
-  }
-  // 3) alle waarde-labels bovenop, met achtergrond-contour zodat ze vóór de lijn leesbaar blijven
-  if(state.toonWaarden){
-    const halo=currentSurface(); ctx.textAlign="center"; ctx.textBaseline="bottom"; ctx.lineJoin="round";
-    const labelMet=(txt,tx,ty,fs)=>{ ctx.font=`700 ${fs}px ${F}`;
-      ctx.lineWidth=Math.max(3,5*S); ctx.strokeStyle=halo; ctx.strokeText(txt,tx,ty);
-      ctx.fillStyle=ink; ctx.fillText(txt,tx,ty); };
-    if(nl<=20) for(let i=0;i<nl;i++){ const v=data.series[0].waarden[i]; if(v==null) continue;
-      const x=p.x+band*i+(band-bw)/2, vy=Y(v); labelMet(fmtNum(v), x+bw/2, Math.min(vy,zeroY)-Math.round(6*S), Math.round(30*S)); }
-    if(nl<=14) for(let j=1;j<ns;j++){ const vals=data.series[j].waarden;
-      vals.forEach((v,i)=>{ if(v==null) return; labelMet(fmtNum(v), X(i), Y(v)-Math.round(14*S), Math.round(28*S)); }); }
-    ctx.textBaseline="top";
-  }
-  ctx.font=`600 ${Math.round(33*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
-  for(let i=0;i<nl;i++){ ctx.fillStyle=labelInk(i,muted); ctx.fillText(fitLabel(ctx,data.labels[i]||"",band-6*S), X(i), p.y+p.h+Math.round(12*S)); }
-  ctx.strokeStyle=axis; ctx.lineWidth=Math.max(1.5,1.5*S);
-  ctx.beginPath(); ctx.moveTo(p.x,zeroY); ctx.lineTo(p.x+p.w,zeroY); ctx.stroke();
-  ctx.textAlign="left";
-}
-
-// Bellendiagram: per categorie een cirkel met oppervlak evenredig aan de waarde
-function drawBubbels(ctx,plot,data,C){
-  const {S,F,ink,muted}=C;
-  const s=data.series[0];
-  const items=(s?data.labels:[]).map((l,i)=>({ l:l||("Categorie "+(i+1)), v:Math.max(0,s.waarden[i]||0), i }));
-  if(!items.length || !items.some(it=>it.v>0)){ ctx.fillStyle=muted; ctx.textAlign="center"; ctx.font=`500 ${Math.round(30*S)}px ${F}`;
-    ctx.fillText("Geen positieve waarden voor een bellendiagram", plot.x+plot.w/2, plot.y+plot.h/2); ctx.textAlign="left"; return; }
-  const vmax=Math.max(...items.map(it=>it.v),1), n=items.length;
-  const rows=Math.max(1,Math.ceil(n/5)), cols=Math.ceil(n/rows);
-  const cellW=plot.w/cols, cellH=plot.h/rows, maxR=Math.min(cellW*0.42, cellH*0.30);
-  items.forEach((it,k)=>{
-    const r=Math.floor(k/cols), cInRij=k-r*cols, inRij=Math.min(cols, n-r*cols), xOff=(cols-inRij)/2*cellW;
-    const cellTop=plot.y+r*cellH, cx=plot.x+xOff+cInRij*cellW+cellW/2, cy=cellTop+cellH*0.40;
-    const rad=Math.max(3, Math.sqrt(it.v/vmax)*maxR);
-    ctx.fillStyle=catColor(it.i); ctx.beginPath(); ctx.arc(cx,cy,rad,0,7); ctx.fill();
-    if(state.toonWaarden){ const txt=fmtNum(it.v); let fs=Math.round(rad*0.5); ctx.font=`700 ${fs}px ${F}`;
-      if(fs>=11 && ctx.measureText(txt).width<rad*1.7){ ctx.fillStyle=bestInk(catColor(it.i));
-        ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(txt,cx,cy); } }
-    ctx.fillStyle=labelInk(it.i,ink); ctx.font=`600 ${Math.round(30*S)}px ${F}`; ctx.textAlign="center"; ctx.textBaseline="top";
-    for(const [li,line] of wrapText(ctx,it.l,cellW*0.92).slice(0,2).entries())
-      ctx.fillText(line, cx, cellTop+cellH*0.80+li*Math.round(34*S));
-  });
-  ctx.textAlign="left"; ctx.textBaseline="top";
-}
-
 /* ============================================================================
    8. UI-KOPPELING  (tabel, kleuren, formaten, undo, bestanden, foto)
    ========================================================================== */
@@ -1611,7 +1550,8 @@ function buildTypePicker(){
     const el=document.createElement("div");
     el.className="type"+(state.type===c.id?" on":"");
     el.innerHTML=`${c.icon()}<span>${c.naam}</span>`;
-    el.onclick=()=>{ state.type=c.id; buildTypePicker(); if(state.gegenereerd) render(); };
+    el.onclick=()=>{ state.type=c.id; buildTypePicker();
+      if(state.gegenereerd){ buildColorControls(); buildSizeButtons(); render(); } };
     box.appendChild(el);
   });
 }
@@ -1681,12 +1621,14 @@ function buildColorControls(){
   const tr=swatch("#ffffff","Transparant", !state.fotoActief && state.kleuren.achtergrond==="transparant", ()=>kiesBg("transparant"));
   tr.style.background="";                       // inline kleur weg -> het grijs/wit-dambord uit de CSS wordt zichtbaar
   tr.classList.add("swatch-transparant"); bg.appendChild(tr);
-  const fb=document.createElement("button"); fb.className="btn"; fb.textContent="Foto…";
-  fb.style.cssText="padding:3px 10px;font-size:12px;height:26px";
-  fb.onclick=()=>$("fotoFile").click(); bg.appendChild(fb);
+  if(FOTO_AAN){                                   // foto staat uit; zet FOTO_AAN op true om 'm terug te halen
+    const fb=document.createElement("button"); fb.className="btn"; fb.textContent="Foto…";
+    fb.style.cssText="padding:3px 10px;font-size:12px;height:26px";
+    fb.onclick=()=>$("fotoFile").click(); bg.appendChild(fb);
+  }
   // foto-bewerkpaneel
   const fc=$("fotoControls");
-  if(state.fotoActief && state.foto.img){
+  if(FOTO_AAN && state.fotoActief && state.foto.img){
     fc.classList.remove("hidden");
     $("fotoZoom").value=Math.round(state.foto.zoom*100); $("fotoContrast").value=state.foto.contrast;
   } else fc.classList.add("hidden");
@@ -1698,11 +1640,10 @@ function buildColorControls(){
   // kleur per reeks / per segment / enkele kleur — afhankelijk van het grafiektype
   const grp=$("seriesColors"); grp.innerHTML="";
   const lbl=$("seriesColorGrp").querySelector(".lbl");
-  const byCategory = ["taart","donut","dashboard","bellen"].includes(state.type);
-  const singleColor = ["lollipop"].includes(state.type);
+  const isTaart = ["taart","donut"].includes(state.type);
   let rows;
-  if(byCategory){ lbl.textContent="Kleur per segment"; rows=state.data.labels.map((l,i)=>({nm:l||("Segment "+(i+1)), idx:i})); }
-  else if(singleColor){ lbl.textContent="Kleur"; rows=[{nm:"Kleur", idx:0}]; }
+  if(isTaart){ lbl.textContent="Kleur per partje"; rows=taartItems(state.data).map(it=>({nm:it.l, idx:it.idx})); }
+  else if(state.type==="dashboard"){ lbl.textContent="Kleur per ring"; rows=state.data.labels.map((l,i)=>({nm:l||("Ring "+(i+1)), idx:i})); }
   else { lbl.textContent="Kleur per reeks"; rows=state.data.series.map((s,j)=>({nm:s.naam||("Reeks "+(j+1)), idx:j})); }
   rows.forEach(r=>{
     const row=document.createElement("div"); row.className="seriescolor";
@@ -1716,7 +1657,7 @@ function buildColorControls(){
   });
 
   // uitlichten: losse kleur per staaf/kolom (alleen zinvol bij één reeks, staaf/kolom/rangschikking)
-  const hlType=["kolom","staaf","lollipop"].includes(state.type);
+  const hlType=["kolom","staaf"].includes(state.type);
   buildPerLabelRows("highlightGrp","highlightRows", state.kleuren.uitgelicht,
     hlType && state.data.series.length===1,
     "Zelfde kleur als de rest");
@@ -1728,6 +1669,21 @@ function buildColorControls(){
   buildPerLabelRows("labelKleurGrp","labelKleurRows", state.kleuren.labelKleur,
     state.data.labels.length>0,
     "Gewone tekstkleur");
+  // taart/donut: vormen de rijen of de reeksen de partjes?
+  $("taartBronGrp").classList.toggle("hidden", !isTaart);
+  if(isTaart) keuzerij("taartBron", [{v:"rijen",t:"Rijen"},{v:"reeksen",t:"Reeksen"}],
+    state.taartBron, v=>{ state.taartBron=v; buildColorControls(); render(); });
+}
+
+/* rijtje kleine keuzeknoppen; roept bij(v) aan met de gekozen waarde */
+function keuzerij(id, opties, actief, bij){
+  const box=$(id); if(!box) return; box.innerHTML="";
+  opties.forEach(o=>{
+    const b=document.createElement("button"); b.type="button";
+    b.className="keuzeknop"+(o.v===actief?" on":""); b.textContent=o.t;
+    b.onclick=()=>bij(o.v);
+    box.appendChild(b);
+  });
 }
 /* gedeelde bouwer voor "per label een kleur"-rijen (uitlichten + labelkleur) */
 function buildPerLabelRows(grpId, rowsId, kleurMap, tonen, stdTitel){
@@ -1763,6 +1719,19 @@ function buildSizeButtons(){
     b.onclick=()=>{ state.formaat={id:f.id,w:f.w,h:f.h}; buildSizeButtons(); render(); };
     box.appendChild(b);
   });
+  // dashboard-indeling hoort bij het formaat (alleen tonen bij een dashboard)
+  const dg=$("dashIndelingGrp");
+  dg.classList.toggle("hidden", state.type!=="dashboard");
+  if(state.type==="dashboard") keuzerij("dashIndeling",
+    [{v:0,t:"Automatisch"},{v:1,t:"1"},{v:2,t:"2"},{v:3,t:"3"},{v:4,t:"4"}],
+    state.dashKolommen|0, v=>{ state.dashKolommen=v; buildSizeButtons(); render(); });
+}
+
+// absolute getallen of percentages (0–100)?
+function buildEenheidKeuze(){
+  keuzerij("eenheidKeuze",
+    [{v:"absoluut",t:"Absolute getallen"},{v:"procent",t:"Percentages (0–100)"}],
+    state.eenheid, v=>{ state.eenheid=v; buildEenheidKeuze(); render(); });
 }
 
 // lijst met sleepbare tekstvakjes (duiding): tekst wijzigen + verwijderen
@@ -1838,11 +1807,22 @@ function showData(p){
   state.kleuren.uitgelicht={}; state.kleuren.labelKleur={};   // horen bij de vorige dataset -> resetten
   state.bibliotheekPad=null;                                  // nieuwe data = nieuwe grafiek
   state.data=p;
+  raadEenheid(p);                                             // absolute getallen of percentages?
   state.kleuren.reeks=p.series.map((_,i)=> vorige[i] || HUISSTIJL.reeksVolgorde[i%HUISSTIJL.reeksVolgorde.length]);
   state.gegenereerd=true;
   $("empty").classList.add("hidden");
   ["preview","downloadbar","editcard","colorcard","formatcard","annotcard"].forEach(x=>$(x).classList.remove("hidden"));
-  buildDataTable(); buildColorControls(); buildSizeButtons(); buildAnnotList(); render();
+  buildDataTable(); buildEenheidKeuze(); buildColorControls(); buildSizeButtons(); buildAnnotList(); render();
+}
+
+/* Gok bij nieuwe data of het om percentages gaat: staat er een %-teken in de
+   invoer of in een reeksnaam, én liggen alle waarden tussen 0 en 100?
+   De redacteur kan het altijd omzetten met de knop "Soort cijfers". */
+function raadEenheid(p){
+  const tekst=($("raw").value||"")+" "+p.series.map(s=>s.naam||"").join(" ");
+  const alles=p.series.flatMap(s=>s.waarden).filter(v=>v!=null);
+  const binnen = alles.length && alles.every(v=>v>=0 && v<=100);
+  state.eenheid = (/%/.test(tekst) && binnen) ? "procent" : "absoluut";
 }
 
 /* ---- ongedaan maken (Ctrl+Z) / opnieuw (Ctrl+Y) ---- */
@@ -1993,16 +1973,12 @@ $("btnSample").onclick=()=>{ $("raw").value="Regio\tMeldingen\nTwente\t352\nIJss
 /* ---- kleine SVG-iconen voor de type-picker ---- */
 function iconKolom(){return `<svg viewBox="0 0 40 34"><g fill="#1361ff"><rect x="4" y="18" width="7" height="14" rx="1.5"/><rect x="16" y="8" width="7" height="24" rx="1.5"/><rect x="28" y="22" width="7" height="10" rx="1.5"/></g></svg>`}
 function iconStaaf(){return `<svg viewBox="0 0 40 34"><g fill="#1361ff"><rect x="2" y="4" width="24" height="7" rx="1.5"/><rect x="2" y="14" width="34" height="7" rx="1.5"/><rect x="2" y="24" width="16" height="7" rx="1.5"/></g></svg>`}
-function iconGestapeld(){return `<svg viewBox="0 0 40 34"><g><rect x="7" y="16" width="9" height="16" rx="1.5" fill="#1361ff"/><rect x="7" y="8" width="9" height="8" rx="1.5" fill="#ff6813"/><rect x="24" y="12" width="9" height="20" rx="1.5" fill="#1361ff"/><rect x="24" y="5" width="9" height="7" rx="1.5" fill="#ff6813"/></g></svg>`}
+function iconGestapeld(){return `<svg viewBox="0 0 40 34"><g><rect x="7" y="16" width="9" height="16" rx="1.5" fill="#1361ff"/><rect x="7" y="8" width="9" height="8" rx="1.5" fill="#ffaf16"/><rect x="24" y="12" width="9" height="20" rx="1.5" fill="#1361ff"/><rect x="24" y="5" width="9" height="7" rx="1.5" fill="#ffaf16"/></g></svg>`}
 function iconLijn(){return `<svg viewBox="0 0 40 34" fill="none"><polyline points="4,26 14,14 24,20 36,6" stroke="#1361ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="14" r="3" fill="#1361ff"/><circle cx="24" cy="20" r="3" fill="#1361ff"/></svg>`}
-function iconVlak(){return `<svg viewBox="0 0 40 34"><polygon points="4,28 4,20 14,10 24,16 36,4 36,28" fill="#1361ff" opacity=".22"/><polyline points="4,20 14,10 24,16 36,4" stroke="#1361ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
-function iconTaart(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r="14" fill="#1361ff"/><path d="M20 17 L20 3 A14 14 0 0 1 33 21 Z" fill="#ff6813"/><path d="M20 17 L33 21 A14 14 0 0 1 24 30 Z" fill="#abbf3d"/></svg>`}
-function iconDonut(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r="14" fill="#1361ff"/><path d="M20 17 L20 3 A14 14 0 0 1 33 21 Z" fill="#ff6813"/><circle cx="20" cy="17" r="6.5" fill="#fff"/></svg>`}
-function iconLolli(){return `<svg viewBox="0 0 40 34"><g stroke="#1361ff" stroke-width="2.5"><line x1="4" y1="8" x2="26" y2="8"/><line x1="4" y1="17" x2="34" y2="17"/><line x1="4" y1="26" x2="16" y2="26"/></g><g fill="#1361ff"><circle cx="26" cy="8" r="4"/><circle cx="34" cy="17" r="4"/><circle cx="16" cy="26" r="4"/></g></svg>`}
-function iconDashboard(){return `<svg viewBox="0 0 40 34" fill="none" stroke-width="4"><circle cx="11" cy="17" r="7" stroke="#e6e9f0"/><path d="M11 10 a7 7 0 0 1 5 12" stroke="#1361ff" stroke-linecap="round"/><circle cx="29" cy="17" r="7" stroke="#e6e9f0"/><path d="M29 10 a7 7 0 0 1 6 8" stroke="#ff6813" stroke-linecap="round"/></svg>`}
-function iconStapel100(){return `<svg viewBox="0 0 40 34"><g rx="1"><rect x="3" y="7" width="16" height="8" rx="1.5" fill="#1361ff"/><rect x="19" y="7" width="10" height="8" fill="#ff6813"/><rect x="29" y="7" width="8" height="8" rx="1.5" fill="#abbf3d"/><rect x="3" y="19" width="10" height="8" rx="1.5" fill="#1361ff"/><rect x="13" y="19" width="14" height="8" fill="#ff6813"/><rect x="27" y="19" width="10" height="8" rx="1.5" fill="#abbf3d"/></g></svg>`}
-function iconCombo(){return `<svg viewBox="0 0 40 34"><g fill="#1361ff"><rect x="4" y="16" width="7" height="15" rx="1.5"/><rect x="16" y="12" width="7" height="19" rx="1.5"/><rect x="28" y="20" width="7" height="11" rx="1.5"/></g><polyline points="7,10 19,6 31,13" fill="none" stroke="#ff6813" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><g fill="#ff6813"><circle cx="7" cy="10" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="31" cy="13" r="2.4"/></g></svg>`}
-function iconBellen(){return `<svg viewBox="0 0 40 34"><circle cx="10" cy="20" r="9" fill="#1361ff"/><circle cx="26" cy="14" r="6" fill="#ff6813"/><circle cx="34" cy="24" r="4" fill="#abbf3d"/></svg>`}
+function iconTaart(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r="14" fill="#1361ff"/><path d="M20 17 L20 3 A14 14 0 0 1 33 21 Z" fill="#ffaf16"/><path d="M20 17 L33 21 A14 14 0 0 1 24 30 Z" fill="#131720"/></svg>`}
+function iconDonut(){return `<svg viewBox="0 0 40 34"><circle cx="20" cy="17" r="14" fill="#1361ff"/><path d="M20 17 L20 3 A14 14 0 0 1 33 21 Z" fill="#ffaf16"/><circle cx="20" cy="17" r="6.5" fill="#fff"/></svg>`}
+function iconDashboard(){return `<svg viewBox="0 0 40 34" fill="none" stroke-width="4"><circle cx="11" cy="17" r="7" stroke="#e6e9f0"/><path d="M11 10 a7 7 0 0 1 5 12" stroke="#1361ff" stroke-linecap="round"/><circle cx="29" cy="17" r="7" stroke="#e6e9f0"/><path d="M29 10 a7 7 0 0 1 6 8" stroke="#ffaf16" stroke-linecap="round"/></svg>`}
+function iconStapel100(){return `<svg viewBox="0 0 40 34"><g rx="1"><rect x="3" y="7" width="16" height="8" rx="1.5" fill="#1361ff"/><rect x="19" y="7" width="10" height="8" fill="#ffaf16"/><rect x="29" y="7" width="8" height="8" rx="1.5" fill="#131720"/><rect x="3" y="19" width="10" height="8" rx="1.5" fill="#1361ff"/><rect x="13" y="19" width="14" height="8" fill="#ffaf16"/><rect x="27" y="19" width="10" height="8" rx="1.5" fill="#131720"/></g></svg>`}
 
 /* ============================================================================
    9. GALERIJ  —  gedeelde grafieken van de redactie.
@@ -2062,12 +2038,17 @@ function bibliotheekSnapshot(){
     kleuren:{ achtergrond:state.kleuren.achtergrond, tekst:state.kleuren.tekst, reeks:state.kleuren.reeks,
       uitgelicht:state.kleuren.uitgelicht, labelKleur:state.kleuren.labelKleur },
     // alleen de bewaarwaardige velden van de tekstvakjes (geen tijdelijke _box)
-    annotaties:(state.annotaties||[]).map(a=>({ tekst:a.tekst||"", x:a.x, y:a.y, ax:a.ax, ay:a.ay })) };
+    annotaties:(state.annotaties||[]).map(a=>({ tekst:a.tekst||"", x:a.x, y:a.y, ax:a.ax, ay:a.ay })),
+    eenheid:state.eenheid, taartBron:state.taartBron, dashKolommen:state.dashKolommen };
 }
 // een uit de bibliotheek geladen grafiek terug in de app zetten
 function bibliotheekToepassen(snap, pad){
   $("raw").value=snap.raw||""; $("titel").value=snap.titel||""; $("ondertitel").value=snap.ondertitel||""; $("bron").value=snap.bron||"";
-  state.type=snap.type||"kolom"; state.formaat=snap.formaat||{w:1920,h:1080,id:"web"};
+  state.type=geldigType(snap.type||"kolom");     // vervallen types -> vervanger
+  state.formaat=snap.formaat||{w:1920,h:1080,id:"web"};
+  state.eenheid = snap.eenheid==="procent" ? "procent" : "absoluut";
+  state.taartBron = snap.taartBron==="reeksen" ? "reeksen" : "rijen";
+  state.dashKolommen = Math.max(0, Math.min(4, snap.dashKolommen|0));
   state.toonWaarden=snap.toonWaarden!==false; $("showValues").checked=state.toonWaarden;
   state.fotoActief=false; state.foto={img:null,panX:.5,panY:.5,zoom:1,contrast:100,transp:0};
   state.data=snap.data||{labels:[],series:[]};
@@ -2081,7 +2062,8 @@ function bibliotheekToepassen(snap, pad){
   state.bibliotheekPad=pad||null; state.gegenereerd=true;
   $("empty").classList.add("hidden");
   ["preview","downloadbar","editcard","colorcard","formatcard","annotcard"].forEach(x=>$(x).classList.remove("hidden"));
-  buildTypePicker(); buildDataTable(); buildColorControls(); buildSizeButtons(); buildAnnotList(); render();
+  buildTypePicker(); buildDataTable(); buildEenheidKeuze();
+  buildColorControls(); buildSizeButtons(); buildAnnotList(); render();
 }
 async function bibliotheekBewerken(dataUrl, pad){
   if(!dataUrl){ alert("Van deze (oudere) grafiek is geen bewerkbare data bewaard; alleen de afbeelding."); return; }
@@ -2127,8 +2109,8 @@ buildTypePicker();
   state.kleuren.reeks=[HUISSTIJL.reeksVolgorde[0]];
   state.gegenereerd=true; state.bibliotheekPad=null;
   $("empty").classList.add("hidden");
-  ["preview","downloadbar","editcard","colorcard","formatcard"].forEach(x=>$(x).classList.remove("hidden"));
-  buildDataTable(); buildColorControls(); buildSizeButtons(); render();
+  ["preview","downloadbar","editcard","colorcard","formatcard","annotcard"].forEach(x=>$(x).classList.remove("hidden"));
+  buildDataTable(); buildEenheidKeuze(); buildColorControls(); buildSizeButtons(); buildAnnotList(); render();
 })();
 
 /* Voorbeeld krimpt naar compact zodra je rechts naar de data scrolt (met
