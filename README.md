@@ -60,7 +60,10 @@ een vaste link zonder iets te downloaden. Zie *Online zetten* hieronder.
   omhoog. De pijltjes omhoog/omlaag doen hetzelfde.
 - **Kleuren (huisstijl)** — kies tekstkleur en de kleur per reeks/segment. Het
   palet is bewust klein gehouden: **Oost-blauw, geel, donkerblauw, lichtblauw en
-  wit**. Zo blijft het altijd RTV Oost.
+  wit**. Zo blijft het altijd RTV Oost. **Uitzondering: taart en donut.** Daar
+  staan bij *Kleur per partje* ook **oranje, rood en groen** — die grafieken
+  hebben vaak meer partjes dan er kleuren in het basispalet zitten. Voor
+  *Uitlichten* en *Labelkleur* geldt ook daar het kleine palet.
 - **Uitlichten** — geef bij één reeks een losse staaf/kolom een eigen kleur
   (bijv. alleen Overijssel geel) via *Uitlichten* onder de kleuren.
 - **Labelkleur** — geef ook de **tekst van een los label** een eigen kleur
@@ -130,8 +133,9 @@ const HUISSTIJL = {
 ```
 
 Het palet is op verzoek van de redactie **klein gehouden**: Oost-blauw, geel,
-donkerblauw, lichtblauw en wit. Oranje, groen, paars en rood zijn er bewust uit
-gehaald. Wil je er later weer bij? Zet ze terug in `waardePalet` (en eventueel in
+donkerblauw, lichtblauw en wit (`waardePalet`). Alleen **taart en donut** krijgen
+er bij *Kleur per partje* oranje, rood en groen bij (`taartExtra`). Wil je meer
+kleuren overal beschikbaar maken? Zet ze in `waardePalet` (en eventueel in
 `reeksVolgorde`) bovenaan `index.html`.
 
 Achtergronden: wit, Oost-lichtblauw `#e7eef9` en Oost-blauw `#1361ff`.
