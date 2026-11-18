@@ -1047,7 +1047,7 @@ function render(){
   // blauw op licht, wit op donker/blauw. De titel/ondertitel wijken ervoor uit
   // zolang ze in dezelfde hoogteband staan; de vrije ruimte eromheen is
   // minstens de hoogte van de 'o' in het woordmerk.
-  const logoW = state.logo ? Math.round(200*S) : 0, logoH = Math.round(logoW*OOST_LOGO_RATIO);
+  const logoW = state.logo ? Math.round(170*S) : 0, logoH = Math.round(logoW*OOST_LOGO_RATIO);
   const logoX = w-padX-logoW, logoY = padTop;
   const logoBand = logoY+logoH+Math.round(10*S);                    // tot hier wijken kopteksten uit
   const kopBreedte = ly => (logoW && ly < logoBand) ? w-padX*2-logoW-Math.round(40*S) : w-padX*2;
