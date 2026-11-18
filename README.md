@@ -143,8 +143,14 @@ Oost-geel is fel, daarom staan waarde-labels en de datatabel standaard aan.
 
 - **Lettertype:** de tool gebruikt **Roobert** (staat op de redactie-computers);
   op een computer zonder Roobert valt hij netjes terug op een systeemletter.
-- **Logo:** de grafieken bevatten bewust **geen** logo (naar keuze van de
-  redactie), zodat je de PNG vrij kunt plaatsen.
+- **Logo:** het officiële **oost**-woordmerk staat standaard **rechtsboven**,
+  direct op de achtergrond — **blauw** op wit/lichtblauw, **wit** op Oost-blauw
+  (zo schrijft de huisstijl het voor; een blauw logo op een blauw vlak zou
+  wegvallen). Titel en ondertitel wijken er automatisch voor uit. Liever
+  zonder? Vink *Oost-logo rechtsboven* uit bij de kleuren (stap 4); die keuze
+  wordt ook in de bibliotheek bewaard. Het logo zit als afbeelding in
+  `index.html` ingebed (`OOST_LOGO_B64`), zodat de app één bestand blijft en
+  de PNG-export ook bij dubbelklik-gebruik blijft werken.
 - **Merknaam in tekst:** schrijf de naam in geschreven tekst voluit als
   **RTV Oost**.
 
